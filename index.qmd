@@ -15,8 +15,8 @@ Advanced spatial analysis and data science for urban planning and public policy.
 - **Final Project:** Capstone modeling challenge
 
 ## About Me
-[I am a first-year City Planning master's student, concentrating in Housing, Community and Economic Development.]
+I am a first-year City Planning master's student, concentrating in Housing, Community and Economic Development.
 
 ## Contact
-- Email: [cerusom@upenn.edu]
-- GitHub: [@maudeceruso]
+- Email: cerusom@upenn.edu
+- GitHub: @maudeceruso

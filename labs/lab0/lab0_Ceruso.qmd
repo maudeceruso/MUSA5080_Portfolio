@@ -1,8 +1,8 @@
 ---
 title: "Lab 0: Getting Started with dplyr"
-subtitle: "Your First Data Analysis"
-author: "Your Name Here"
-date: today
+subtitle: "My First Data Analysis"
+author: "Maude Ceruso"
+date: 01-20-2026
 format: 
   html:
     code-fold: false
@@ -46,10 +46,10 @@ Explore the structure of your data and answer these questions:
 
 ```{r explore-structure}
 # Use glimpse() to see the data structure
-
+glimpse(car_data)
 
 # Check the column names
-
+names(car_data)
 
 # Look at the first few rows
 head(car_data)
@@ -61,10 +61,10 @@ head(car_data)
 - Are there any column names that might cause problems? Why?
 
 **Your answers:**
-- Rows: [YOUR ANSWER]
-- Columns: [YOUR ANSWER]  
-- Variable types: [YOUR ANSWER]
-- Problematic names: [YOUR ANSWER]
+- Rows: 50000
+- Columns: 7  
+- Variable types: numeric and character variables
+- Problematic names: "Engine size" or "Fuel type" due to spaces in between words
 
 ## 1.2 Tibble vs Data Frame
 
@@ -72,16 +72,19 @@ Compare how tibbles and data frames display:
 
 ```{r tibble-vs-dataframe}
 # Look at the tibble version (what we have)
-car_data
+print(car_data)
 
 # Convert to regular data frame and display
 car_df <- as.data.frame(car_data)
-car_df
+print(car_df)
 ```
 
 **Question:** What differences do you notice in how they print?
 
-**Your answer:** [YOUR ANSWER]
+**Your answer:** The tibble shows the first 10 rows of data, and each variable
+is denoted as either character or numeric, whereas the dataframe shows rows 
+until it reaches its max, in this case 142 rows. The dataframe does not 
+specify whether the variables are characters or numeric.
 
 # Exercise 2: Basic Column Operations
 
@@ -91,13 +94,15 @@ Practice selecting different combinations of columns:
 
 ```{r column-selection}
 # Select just Model and Mileage columns
-
+select(car_data, Model, Mileage)
 
 # Select Manufacturer, Price, and Fuel type
 
+select(car_data, Manufacturer, Price, 'Fuel type')
 
 # Challenge: Select all columns EXCEPT Engine Size
 
+select(car_data, -'Engine size')
 ```
 
 ## 2.2 Renaming Columns
@@ -106,7 +111,10 @@ Let's fix a problematic column name:
 
 ```{r rename-columns}
 # Rename 'Year of manufacture' to year
+rename(car_data, year = 'Year of manufacture')
 
+car_data <- car_data %>%
+  rename(Year = 'Year of manufacture')
 
 # Check that it worked
 names(car_data)
@@ -114,7 +122,7 @@ names(car_data)
 
 **Question:** Why did we need backticks around `Year of manufacture` but not around `year`?
 
-**Your answer:** [YOUR ANSWER]
+**Your answer:** Because there were spaces between each word.
 
 # Exercise 3: Creating New Columns
 
@@ -122,13 +130,19 @@ names(car_data)
 
 ```{r calculate-age}
 # Create an 'age' column (2025 minus year of manufacture)
-
+car_data <- car_data %>%
+  mutate(Age = 2025 - Year)
 
 # Create a mileage_per_year column  
-
+car_data_new <- car_data %>%
+  mutate(mileage_per_year = Mileage/Year)
 
 # Look at your new columns
-#select(car_data, Model, year, age, Mileage, mileage_per_year)
+
+print(car_data_new)
+
+select(car_data_new, Model, Year, Age, Mileage, mileage_per_year)
+
 ```
 
 ## 3.2 Categorize Cars
@@ -136,8 +150,16 @@ names(car_data)
 ```{r categorize-cars}
 # Create a price_category column where if price is < 15000, its is coded as budget, between 15000 and 30000 is midrange and greater than 30000 is mid-range (use case_when)
 
+car_data_new <- car_data_new %>%
+  mutate(price_category = case_when(
+    Price < 15000 ~ "Budget",
+    Price <= 30000 ~ "Midrange",
+    Price > 30000 ~ "Expensive",
+    TRUE ~ NA_character_
+  ))
 
 # Check your categories select the new column and show it
+select(car_data_new, price_category)
 ```
 
 # Exercise 4: Filtering Practice
@@ -146,12 +168,13 @@ names(car_data)
 
 ```{r basic-filtering}
 # Find all Toyota cars
-
+filter(car_data_new, Manufacturer == "Toyota")
 
 # Find cars with mileage less than 30,000
-
+filter(car_data_new, Mileage < 30000)
 
 # Find luxury cars (from price category) with low mileage
+filter(car_data_new, price_category == "Expensive" & Mileage < 30000)
 
 ```
 
@@ -159,18 +182,19 @@ names(car_data)
 
 ```{r multiple-conditions}
 # Find cars that are EITHER Honda OR Nissan
-
+filter(car_data_new, Manufacturer == "Honda" & Manufacturer == "Nissan")
 
 # Find cars with price between $20,000 and $35,000
-
+filter(car_data_new, Price >= 20000 & Price <= 35000)
 
 # Find diesel cars less than 10 years old
+filter(car_data_new, `Fuel type` == "Diesel" & Age < 10 )
 
 ```
 
 **Question:** How many diesel cars are less than 10 years old?
 
-**Your answer:** [YOUR ANSWER]
+**Your answer:** 2,040
 
 # Exercise 5: Grouping and Summarizing
 
@@ -178,7 +202,7 @@ names(car_data)
 
 ```{r basic-summaries}
 # Calculate average price by manufacturer
-avg_price_by_brand <- car_data %>%
+avg_price_by_brand <- car_data_new %>%
   group_by(Manufacturer) %>%
   summarize(avg_price = mean(Price, na.rm = TRUE))
 
@@ -186,9 +210,18 @@ avg_price_by_brand
 
 # Calculate average mileage by fuel type
 
+avg_mil_by_fuel <- car_data_new %>%
+  group_by(`Fuel type`) %>%
+  summarize(avg_mil = mean(Mileage, na.rm = TRUE))
+
+avg_mil_by_fuel
 
 # Count cars by manufacturer
 
+count_car_by_mfctr <- car_data_new %>%
+  group_by(Manufacturer) %>%
+  summarize(count = n ())
+count_car_by_mfctr
 ```
 
 ## 5.2 Categorical Summaries
@@ -196,6 +229,11 @@ avg_price_by_brand
 ```{r categorical-summaries}
 # Frequency table for price categories
 
+price_freq_tbl <- car_data_new %>%
+  group_by(price_category) %>%
+  summarize(count = n())
+
+price_freq_tbl
 ```
 
 

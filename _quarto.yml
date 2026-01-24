@@ -8,6 +8,9 @@ website:
     left:
       - href: index.qmd
         text: Home
+        text: Labs
+        menu: 
+          - href: labs/lab0_Ceruso.qmd
 
 format:
   html:

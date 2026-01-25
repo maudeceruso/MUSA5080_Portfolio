@@ -182,7 +182,7 @@ filter(car_data_new, price_category == "Expensive" & Mileage < 30000)
 
 ```{r multiple-conditions}
 # Find cars that are EITHER Honda OR Nissan
-filter(car_data_new, Manufacturer == "Honda" & Manufacturer == "Nissan")
+filter(car_data_new, Manufacturer %in% c("Honda","Nissan"))
 
 # Find cars with price between $20,000 and $35,000
 filter(car_data_new, Price >= 20000 & Price <= 35000)

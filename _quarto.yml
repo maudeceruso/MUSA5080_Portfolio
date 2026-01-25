@@ -11,7 +11,7 @@ website:
       - text: Labs
         menu: 
           - href: labs/lab0/lab0_Ceruso.qmd
-          - text: "Lab 0: dplyr Basics"
+            text: "Lab 0: dplyr Basics"
 format:
   html:
     theme: cosmo

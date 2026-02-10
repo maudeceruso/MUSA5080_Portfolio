@@ -154,6 +154,7 @@ count(ny_reliability, reliability)
 high_uncertainty <- ny_reliability %>% 
   filter(moe_percentage > 8) %>% 
   arrange(desc(moe_percentage)) %>% 
+  slice(1:5) %>%
   select(county_name, medHHincE, medHHincM, moe_percentage, reliability)
 
 head(high_uncertainty)
@@ -164,6 +165,12 @@ kable(high_uncertainty,
                     "Reliability"),
       caption = "Counties with Highest Income Data Uncertainty",
       format.args = list(big.mark = ','))
+
+# looking at range of values of MOE percentages
+ggplot(high_uncertainty, aes(y = moe_percentage)) +
+  geom_boxplot()
+
+summary(high_uncertainty$moe_percentage)
 ```
 
 **Data Quality Commentary:**
@@ -183,12 +190,16 @@ kable(high_uncertainty,
 ```{r select-counties}
 # Use filter() to select 2-3 counties from your county_reliability data
 # Store the selected counties in a variable called selected_counties
+selected_counties <- ny_reliability %>%
+  filter(county_name %in% c("Queens", "Schuyler", "Hamilton")) %>%
+  select(county_name, medHHincE, moe_percentage, reliability)
 
 # Display the selected counties with their key characteristics
 # Show: county name, median income, MOE percentage, reliability category
+head(selected_counties)
 ```
 
-**Comment on the output:** [write something :)]
+**Comment on the output:** [The highest household income is associated with the county with the highest reliability score, whereas the remaining two 'moderate' and 'low confidence' counties show median household incomes in the $60,000's]
 
 ## 3.2 Tract-Level Demographics
 
@@ -203,14 +214,38 @@ kable(high_uncertainty,
 
 ```{r tract-demographics}
 # Define your race/ethnicity variables with descriptive names
-
 # Use get_acs() to retrieve tract-level data
 # Hint: You may need to specify county codes in the county parameter
+selected_demographics <- get_acs(
+  geography = "tract",
+  variables = c(white_alone = "B03002_003", black = "B03002_004", hisp_lat = "B03002_012", tot_pop = "B03002_001"),
+  year = 2022,
+  survey = "acs5",
+  output = "wide",
+  state = my_state,
+  county = c(047, 097, 081))
 
 # Calculate percentage of each group using mutate()
 # Create percentages for white, Black, and Hispanic populations
+demographics_with_pcts <- selected_demographics %>%
+  mutate(pct_white = round((white_aloneE/tot_popE)*100,2),
+         pct_black = round((blackE/tot_popE)*100,2),
+         pct_hisplat = round((hisp_latE/tot_popE)*100,2)
+  )
 
 # Add readable tract and county name columns using str_extract() or similar
+demographics_clean <- demographics_with_pcts %>%
+  mutate(
+    #remove Census Tract and number from county name
+    county_name = str_remove(NAME, "Census Tract \\d+;"),
+    county_name = str_remove(county_name, "Census Tract \\d+\\.\\d*;"),
+    #remove state name and "County" word from county names
+    county_name = str_remove(county_name, "County; New York"),
+    #remove county and state
+    tract = str_remove(NAME, ";.*"),
+    tract = str_remove(tract, "Census Tract")
+  )
+head(demographics_clean)
 ```
 
 ## 3.3 Demographic Analysis
@@ -220,11 +255,32 @@ kable(high_uncertainty,
 ```{r demographic-analysis}
 # Find the tract with the highest percentage of Hispanic/Latino residents
 # Hint: use arrange() and slice() to get the top tract
+highest_pct_hisplat <- demographics_clean %>% 
+  arrange(desc(pct_hisplat)) %>% 
+  slice(1)
 
 # Calculate average demographics by county using group_by() and summarize()
 # Show: number of tracts, average percentage for each racial/ethnic group
 
+count(demographics_clean, county_name) #find total census tracts for each county
+
+
+county_avg_demographics <- demographics_clean %>%
+  group_by(county_name) %>%
+  summarize(
+    n_tracts = n(),
+    avg_pct_white = round(mean(pct_white, na.rm = TRUE), 2),
+    avg_pct_black = round(mean(pct_black, na.rm = TRUE), 2),
+    avg_pct_hisplat = round(mean(pct_hisplat, na.rm = TRUE), 2),
+    avg_tot_pop = round(mean(tot_popE, na.rm = TRUE), 2)
+  )
+
 # Create a nicely formatted table of your results using kable()
+kable(county_avg_demographics,
+      col.names = c("County","Total Tracts", "% White", "% Black",
+                    "% Hispanic/Latino", "Total Population"),
+      caption = "Queens, Schuyler and Hamilton Counties: Average Demographics",
+      format.args = list(big.mark = ','))
 ```
 
 # Part 4: Comprehensive Data Quality Evaluation
@@ -245,7 +301,34 @@ kable(high_uncertainty,
 # Create a flag for tracts with high MOE on any demographic variable
 # Use logical operators (| for OR) in an ifelse() statement
 
+county_dems_reliability <- demographics_clean %>%
+  # using ifelse() to guard against zeros that will give Inf results, messing up plots
+  mutate(moe_pct_white = ifelse(pct_white > 0, round((white_aloneM / white_aloneE)*100, 2), NA), 
+         moe_pct_black = ifelse(pct_black > 0, round((blackM / blackE)*100, 2), NA),
+         moe_pct_hsp = ifelse(pct_hisplat > 0, round((hisp_latM / hisp_latE)*100, 2), NA),
+         high_moe_flag = ifelse(
+             moe_pct_white > 15 |
+             moe_pct_black > 15 |
+             moe_pct_hsp > 15,
+             1, 0
+             )
+  )
+# assessing variability of each demographic variable moe percentage values
+summary(county_dems_reliability$moe_pct_white) 
+summary(county_dems_reliability$moe_pct_black)
+summary(county_dems_reliability$moe_pct_hsp)
+
 # Create summary statistics showing how many tracts have data quality issues
+tracts_reliability_summary <- county_dems_reliability %>%
+  group_by(county_name) %>%
+  summarize(
+    total_tracts = n(),
+    tracts_with_issues = sum(high_moe_flag, na.rm = TRUE),
+    pct_tracts_with_issues = mean(high_moe_flag, na.rm = TRUE) * 100
+  )
+head(tracts_reliability_summary)
+  # total_tracts and tracts_with_issues are not equal but the pct_tracts_with_issues are all 100% - the "missing" tracts are those with "NA"      values
+
 ```
 
 ## 4.2 Pattern Analysis
@@ -254,14 +337,87 @@ kable(high_uncertainty,
 
 ```{r pattern-analysis}
 # Group tracts by whether they have high MOE issues
-# Calculate average characteristics for each group:
-# - population size, demographic percentages
+tract_dems_reliability <- county_dems_reliability %>%
+  mutate(
+    white_reliability = case_when(
+      moe_pct_white <= 20 ~ "High",
+      moe_pct_white <= 40 ~ "Moderate",
+      moe_pct_white <= 60 ~ "Low",
+      TRUE ~ "Very low" # if no above conditions are met, assign tract "Very low" category; without this case_when() would return NAs
+    ),
+    black_reliability = case_when(
+      moe_pct_black <= 20 ~ "High",
+      moe_pct_black <= 40 ~ "Moderate",
+      moe_pct_black <= 60 ~ "Low",
+      TRUE ~ "Very low"
+    ),
+    hispanic_reliability = case_when(
+      moe_pct_hsp <= 20 ~ "High",
+      moe_pct_hsp <= 40 ~ "Moderate",
+      moe_pct_hsp <= 60 ~ "Low",
+      TRUE ~ "Very low"
+    )
+  )
 
+high_uncertainty_tracts <- tract_dems_reliability %>%
+  filter(white_reliability == "Low", 
+         black_reliability == "Low", 
+         hispanic_reliability == "Low") %>% 
+  slice(1:5) %>%
+  select(tract, pct_white, pct_black, pct_hisplat, tot_popE, white_reliability)
+
+view(high_uncertainty_tracts)
+
+# Calculate average characteristics for each group - population size, demographic percentages
 # Use group_by() and summarize() to create this comparison
-# Create a professional table showing the patterns
+  # white population - analysis
+white_reliability_summary <- tract_dems_reliability %>%
+  group_by(white_reliability) %>%
+  summarize(
+    n_tracts = n(),
+    avg_pct_white = round(mean(pct_white), 2),
+    avg_tot_pop = round(mean(tot_popE), 2)
+  )
+view(white_reliability_summary)
+  # black population - analysis
+black_reliability_summary <- tract_dems_reliability %>%
+  group_by(black_reliability) %>%
+  summarize(
+    n_tracts = n(),
+    avg_pct_black = round(mean(pct_black), 2),
+    avg_tot_pop = round(mean(tot_popE), 2)
+  )
+view(black_reliability_summary)
+  # hispanic/latino population - analysis
+hsplat_reliability_summary <- tract_dems_reliability %>%
+  group_by(hispanic_reliability) %>%
+  summarize(
+    n_tracts = n(),
+    avg_pct_hsplat = round(mean(pct_hisplat), 2),
+    avg_tot_pop = round(mean(tot_popE), 2)
+    )
+view(hsplat_reliability_summary)
+
+# Create a professional table(s) showing the patterns
+kable(white_reliability_summary,
+      col.names = c("Reliability","Total Tracts", "% White", "Total Population"),
+      caption = "Tract Average Demographic Characteristics by Data Reliability Levels",
+      format.args = list(big.mark = ','))
+kable(black_reliability_summary,
+      col.names = c("Reliability","Total Tracts", "% Black", "Total Population"),
+      caption = "Tract Average Demographic Characteristics by Data Reliability Levels",
+      format.args = list(big.mark = ','))
+kable(hsplat_reliability_summary,
+      col.names = c("Reliability","Total Tracts", "% Hispanic/Latino", "Total Population"),
+      caption = "Tract Average Demographic Characteristics by Data Reliability Levels",
+      format.args = list(big.mark = ','))
+kable(high_uncertainty_tracts,
+      col.names = c("Tract", "% White", "% Black", "% Hispanic/Latino", "Total Population", "Reliability"),
+      caption = "Top 5 Tracts with Highest Data Uncertainty: Average Demographics",
+      format.args = list(big.mark = ','))
 ```
 
-**Pattern Analysis:** [Describe any patterns you observe. Do certain types of communities have less reliable data? What might explain this?]
+**Pattern Analysis:** [The tracts that tend to fall in the "high" reliability category are those with total populations that are on average above 3,500. The specific demographic race/ethnicity variables are also most reliable when the average population of the respective demographic groups are on average greater than 2000. The demographic estimates start to lose reliability (low and very low) when the average population amounts are below 700. Such observations align with the logic that error margins tend to increase, and therefore reliability decreases, when sample populations are small.]
 
 
 # Part 5: Policy Recommendations
@@ -278,7 +434,10 @@ kable(high_uncertainty,
 
 **Executive Summary:**
 
-[Your integrated 4-paragraph summary here]
+[1. Across all the analyses, places with low populations tend to produce higher margins of error for a given estimate. For example, median        income values were least reliable in sparsely populated counties. The same was true for estimates of total populations of different race      and ethnic groups across tracts, where the lowest reliability was associated with tracts where both a respective demographic group (white,     black, hispanic/latino) represented a small share of the populationn and the total population of the census tract was low.
+ 2. Based on these findings, the communities which face the greatest risk of algorithmic bias are those with low total populations and those      where a specific racial or ethnic group's population is also low.
+ 3. One root cause of data quality issues associated with low populated areas is the difficulty of surveyors to reach their populations of        interest. In more rural, remote places, peoples' physical addresses may be inconsistent or missing.
+ 4. The Department might consider greater in-person contact with small, more remote communities to develop community-informed strategies to       best reach residents in the area, perhaps through engagement with community spaces like faith-based gathering centers.]
 
 ## 6.3 Specific Recommendations
 
@@ -287,28 +446,46 @@ kable(high_uncertainty,
 ```{r recommendations-data}
 # Create a summary table using your county reliability data
 # Include: county name, median income, MOE percentage, reliability category
+summary_table <- ny_reliability %>%
+  select(county_name, medHHincE, moe_percentage, reliability)
 
 # Add a new column with algorithm recommendations using case_when():
 # - High Confidence: "Safe for algorithmic decisions"
 # - Moderate Confidence: "Use with caution - monitor outcomes"  
 # - Low Confidence: "Requires manual review or additional data"
+summary_table1 <- summary_table %>%
+  mutate(recommendation = case_when(
+    moe_percentage < 5 ~ "Safe for algorithmic decisions",
+    moe_percentage >= 5 & moe_percentage <= 10 ~ "Use with caution - monitor outcomes",
+    moe_percentage > 10 ~ "Requires manual review or additional data"
+  ))
 
+summary_table1
+
+view(summary_table1)
 # Format as a professional table with kable()
+kable(summary_table1,
+      col.names = c("County", "Median Income", "% MOE", "Reliability", "Recommendation"),
+      caption = "NY County Median Income Data: Reliability and Recommendations",
+      format.args = list(big.mark = ','))
+
 ```
 
 **Key Recommendations:**
 
 **Your Task:** Use your analysis results to provide specific guidance to the department.
 
-1. **Counties suitable for immediate algorithmic implementation:** [List counties with high confidence data and explain why they're appropriate]
+1. **Counties suitable for immediate algorithmic implementation:** [Albany, Allegany, Bronx, Broome, and Cattaraugus are all counties in NY       that have high confidence data, meaning that they are appropriate for algorithmic implementation as there will be little concern that any     analyzed values are mis-representative of reality due to small MOE percentages.]
 
-2. **Counties requiring additional oversight:** [List counties with moderate confidence data and describe what kind of monitoring would be needed]
+2. **Counties requiring additional oversight:** [Essex, Greene, Schuyler, Seneca, and Yates are counties with moderate confidence data that       would require some additional effort to verify whether the values provide an accurate reflection of reality in these areas, perhaps by        supplementing the analysis of median income using proxy data such as home values.]
 
-3. **Counties needing alternative approaches:** [List counties with low confidence data and suggest specific alternatives - manual review, additional surveys, etc.]
+3. **Counties needing alternative approaches:** [ Hamilton county has low confidence median income data that will definitely require further      survey collection to boost the count of the sample population in order to make reasonable inferences with the resulting data.]
 
 ## Questions for Further Investigation
 
-[List 2-3 questions that your analysis raised that you'd like to explore further in future assignments. Consider questions about spatial patterns, time trends, or other demographic factors.]
+[1. How does one account for places where populations have recently fluctuated rapidly but their populations are large, likely producing smaller MOEs?
+ 2. How have MOEs changed or not for key racial and ethnic groups over time?]
+
 
 # Technical Notes
 

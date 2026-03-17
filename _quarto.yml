@@ -16,6 +16,8 @@ website:
             text: "Lab 1: Census Data Exploration"
           - href: labs/lab2/lab2_Ceruso.qmd
             text: "Lab 2: Spatial Analysis and Visualization"
+          - href: PPA_presentation/PPA_presentation.qmd
+            text: "Midterm: Presentation"
 format:
   html:
     theme: cosmo

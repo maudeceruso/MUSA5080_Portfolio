@@ -305,7 +305,7 @@
     "href": "PPA_presentation/PPA_presentation.html#model-comparison",
     "title": "Philadelphia Housing Price Prediction",
     "section": "Model Comparison",
-    "text": "Model Comparison\n\n\n\n\n\nModel\nRMSE\nMAE\nR2\n\n\n\n\nStructural\n0.561\n0.419\n0.381\n\n\n+ Demographic\n0.440\n0.318\n0.619\n\n\n+ Spatial\n0.437\n0.316\n0.624\n\n\n+ Fixed Effects\n0.391\n0.267\n0.700"
+    "text": "Model Comparison\n\n\n\n\n\nModel\nRMSE\nMAE\nR2\n\n\n\n\nStructural\n0.561\n0.419\n0.381\n\n\n+ Demographic\n0.441\n0.318\n0.619\n\n\n+ Spatial\n0.437\n0.316\n0.624\n\n\n+ Fixed Effects\n0.391\n0.267\n0.700"
   },
   {
     "objectID": "PPA_presentation/PPA_presentation.html#top-predictors",

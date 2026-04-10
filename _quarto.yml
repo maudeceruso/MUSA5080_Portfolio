@@ -20,10 +20,14 @@ website:
             text: "Midterm: Presentation"
           - href: PPA_presentation/Brar_Ceruso_Gupta_Satyal_March_17_Appendix.qmd
             text: "Lab 3: Midterm Appendix"
+          - href: labs/lab4/lab_4.qmd
+            text: "Lab 4: Spatial Predictive Analysis"
 format:
   html:
     theme: cosmo
     toc: true
+    toc-location: left
+    toc-depth: 3
     code-fold: true
 
 execute:

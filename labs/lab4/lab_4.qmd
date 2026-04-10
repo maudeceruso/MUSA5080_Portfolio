@@ -1,0 +1,792 @@
+---
+title: "Lab 4: Spatial Predictive Analysis"
+subtitle: "Analyzing 311 Violations"
+author: "Maude Ceruso"
+date: April 9, 2026
+format: 
+  html:
+    code-fold: false
+    toc: true
+    toc-location: left
+    theme: cosmo
+    embed-resources: true
+execute:
+  warning: false
+  message: false
+---
+
+## Introduction
+
+This report analyzes the relationship between the amount of 311 service requests for vacant buildings in Chicago and observed burglaries. The vacant building service request data was drawn from the City of Chicago 311 Service Request dataset. Both this data and the burglary data are recorded for the year 2017. The report analyses the potential relationship between the two variables using both a Poisson and Negative Binomial regression model where the count of burglaries represent the predicted, dependent variable and the presence of vacant buildings characterizes one of the main predictor variables. This analysis helps to further explore the "broken windows theory" which suggests that signs of disorder may be associated with further disorder, through crime incidents like burglary. Analyzing vacant buildings as one particular form of "disorder" in the built environment is a particularly interesting variable as burglaries would be thought to typically occur in areas where buildings are inhabited and thus contain some objects of value within. The vacant building, in this view, would not seem to be a likely target of burglary, which could lead to the hypothesis that the occurrence of burglaries be inversely related to the presence of vacant buildings. Such an hypothesis, however, may contain hidden assumptions that the predictive spatial models will allow us to further explore, testing how well vacant buildings predicts the likelihood of a burglary to happen in a given part of the city's geography.
+
+Chicago 311 Service Requests dataset:
+
+<https://data.cityofchicago.org/stories/s/311-Dataset-Changes-12-11-2018/d7nq-5g7t>
+
+#### Part 1: Data Loading & Exploration
+
+The first part of the analysis begins with loading all geographic boundary data relevant to the study area, Chicago, the specified 311 vacant buildings dataset, as well as the city's 2017 burglary data. The geographic units of interest include the citywide boundary, police districts and police beats. Across the entire city, from 2017-2018, there were a total of **3,653** 311 calls made to report sightings of vacant buildings.
+
+##### Setup
+
+```{r setup}
+#| message: false
+#| warning: false
+
+# Load required packages
+library(tidyverse)      # Data manipulation
+library(sf)             # Spatial operations
+library(here)           # Relative file paths
+library(viridis)        # Color scales
+library(terra)          # Raster operations (replaces 'raster')
+library(spdep)          # Spatial dependence
+library(FNN)            # Fast nearest neighbors
+library(MASS)           # Negative binomial regression
+library(patchwork)      # Plot composition (replaces grid/gridExtra)
+library(knitr)          # Tables
+library(kableExtra)     # Table formatting
+library(classInt)       # Classification intervals
+
+
+# Spatstat for analyzing point patterns - split into sub-packages
+library(spatstat.geom)    # Spatial geometries
+library(spatstat.explore) # Spatial exploration/KDE
+
+# Set options
+options(scipen = 999)  # No scientific notation
+set.seed(5080)         # Reproducibility, could be any number
+
+# Create consistent theme for visualizations
+theme_crime <- function(base_size = 11) {
+  theme_minimal(base_size = base_size) +
+    theme(
+      plot.title = element_text(face = "bold", size = base_size + 1),
+      plot.subtitle = element_text(color = "gray30", size = base_size - 1),
+      legend.position = "right",
+      panel.grid.minor = element_blank(),
+      axis.text = element_blank(),
+      axis.title = element_blank()
+    )
+}
+
+# Set as default
+theme_set(theme_crime())
+
+cat("✓ All packages loaded successfully!\n")
+cat("✓ Working directory:", getwd(), "\n")
+```
+
+##### Load Chicago Spatial Data
+
+```{r load-boundaries}
+#| message: false
+
+# Load police districts (used for spatial cross-validation)
+policeDistricts <- 
+  st_read("https://data.cityofchicago.org/api/geospatial/24zt-jpfn?method=export&format=GeoJSON") %>%
+  st_transform('ESRI:102271') %>%
+  dplyr::select(District = dist_num)
+
+# Load police beats (smaller administrative units)
+policeBeats <- 
+  st_read("https://data.cityofchicago.org/api/geospatial/n9it-hstw?method=export&format=GeoJSON") %>%
+  st_transform('ESRI:102271') %>%
+  dplyr::select(Beat = beat_num)
+
+# Load Chicago boundary
+chicagoBoundary <- 
+  st_read("https://raw.githubusercontent.com/urbanSpatial/Public-Policy-Analytics-Landing/master/DATA/Chapter5/chicagoBoundary.geojson") %>%
+  st_transform('ESRI:102271')
+
+cat("✓ Loaded spatial boundaries\n")
+cat("  - Police districts:", nrow(policeDistricts), "\n")
+cat("  - Police beats:", nrow(policeBeats), "\n")
+```
+
+##### Load Burglary data
+
+```{r load-burglaries}
+#| message: false
+
+# Load from provided data file (downloaded from Chicago open data portal)
+burglaries <- st_read(here("data", "burglaries.shp")) %>% 
+  st_transform('ESRI:102271')
+
+glimpse(burglaries)
+
+# Check the data
+cat("\n✓ Loaded burglary data\n")
+cat("  - Number of burglaries:", nrow(burglaries), "\n")
+cat("  - CRS:", st_crs(burglaries)$input, "\n")
+cat("  - Date range:", format(min(burglaries$Date, na.rm = TRUE)), "to", 
+    format(max(burglaries$Date, na.rm = TRUE)), "\n")
+
+```
+
+##### Load 311 data
+
+```{r load-vacant-buildings}
+#| message: false
+
+vacant_bldg <- read_csv(here("labs/lab4/lab4data/311_Service_Requests_-_Vacant_and_Abandoned_Buildings_Reported_-_Historical_20260407.csv")) %>%
+  rename(date = `DATE SERVICE REQUEST WAS RECEIVED`) %>% 
+  filter(!is.na(LATITUDE), !is.na(LONGITUDE)) %>%
+  mutate(date = mdy(date)) %>% 
+  filter(date >= as.Date("2017-01-01"),
+         date < as.Date("2018-01-01")) %>% # filtering data to 2017-2018 
+  st_as_sf(coords = c("LONGITUDE", "LATITUDE"), crs = 4326) %>%
+  st_transform('ESRI:102271')
+
+vacant_bldg <- vacant_bldg %>% # clip vacant buildings to chicago boundary
+  st_filter(chicagoBoundary)
+
+
+cat("✓ Loaded vacant buildings calls\n")
+cat("  - Number of calls:", nrow(vacant_bldg), "\n")
+```
+
+Mapping the individual point locations alongside the kernel density of vacant building service requests provides more insight into where these calls typically get made across Chicago. The resulting map demonstrates that these 311 calls are scattered throughout but inconsistently across the city, with particularly pronounced clusters in the southern and western parts. The kernel density representation of this point data renders this clustering pattern more clear, illustrating the respective intensities of the clustering, or a "heatmap" of calls such that the south and southwestern regions stand out quite starkly from the rest of the city. This pronounced density of 311 calls tends southwards to form two other two to three other relatively "hotspot" zones for vacant buildings. Meanwhile, there are notably fewer calls being made as proximity to central city areas decreases.
+
+##### Spatial Distribution of Vacant Buildings
+
+```{r}
+p1 <- ggplot() + 
+  geom_sf(data = chicagoBoundary, fill = "gray95", color = "gray60") +
+  geom_sf(data = vacant_bldg, color = "#d62828", size = 0.1, alpha = 0.4) +
+  labs(
+    title = "Vacant Building Locations",
+    subtitle = paste0("Chicago 2017, n = ", nrow(vacant_bldg))
+  )
+
+# Density surface using modern syntax
+p2 <- ggplot() + 
+  geom_sf(data = chicagoBoundary, fill = "gray95", color = "gray60") +
+  geom_density_2d_filled(
+    data = data.frame(st_coordinates(vacant_bldg)),
+    aes(X, Y),
+    alpha = 0.7,
+    bins = 8
+  ) +
+  scale_fill_viridis_d(
+    option = "plasma",
+    direction = -1,
+    guide = "none"  # Modern ggplot2 syntax (not guide = FALSE)
+  ) +
+  labs(
+    title = "Density Surface",
+    subtitle = "Kernel density estimation"
+  )
+
+# Combine plots using patchwork (modern approach)
+p1 + p2 + 
+  plot_annotation(
+    title = "Spatial Distribution of Vacant Buildings in Chicago",
+    tag_levels = 'A'
+  )
+```
+
+The bar chart below provides greater insight into the amount of 311 calls on vacant buildings fall within the different boundaries of Chicago's police district. Here, the greatest number of these service requests fall into police district 7, which aligns with the earlier maps as this district covers Chicago's Englewood neighborhood, a central neighborhood in Chicago's south side.
+
+##### Vacant Buildings - Table and Bar chart
+
+```{r bar-chart}
+
+# Make table that displays in which police districts are most vacant buildings that get reported
+
+vbldg_table <- vacant_bldg %>% 
+  group_by(`Police District`) %>% 
+  summarise(total_vbldg = n()) %>% 
+  filter(!is.na(`Police District`)) %>% 
+  mutate(`Police District` = as.character(`Police District`)) %>% 
+  st_drop_geometry()
+
+vbldg_barchart <- ggplot(vbldg_table, aes(x = reorder(`Police District`, -total_vbldg),
+                                          y = total_vbldg)) +
+  geom_col(fill = "#d62828") +
+  labs(
+    title = "Vacant Building Service Requests by Police District",
+      x = "Police District",
+      y = "Vacant Building Service Requests Count"
+  ) +
+   theme_crime() +
+  theme(
+    axis.text = element_text(),   # override theme_crime's blank axis text
+    axis.text.x = element_text(size = 8),
+    axis.title = element_text(),
+    axis.title.x = element_text(size = 8),
+    axis.title.y = element_text(size = 8)
+  )
+
+vbldg_barchart
+```
+
+```{r police-district-map}
+# Bar chart mapped onto Chicago's Police Districts
+policeDistricts %>% 
+  left_join(vbldg_table, by = c("District" = "Police District")) %>% 
+  ggplot() +
+  geom_sf(aes(fill = total_vbldg), color = "white", linewidth = 0.5) +
+  geom_sf_text(aes(label = District), size = 3, color = "white") +
+  scale_fill_viridis_c(name = "Total 311 Vacant Building Calls", option = "plasma") + 
+  labs(
+    title = "Vacant Building Service Requests by Police District", 
+    subtitle = "Chicago 2017"
+  ) +
+  theme_crime()
+
+```
+
+#### Part 2: Fishnet Grid Creation
+
+This section applies a fishnet grid of 500m x 500m to the boundaries of Chicago. This grid facilitates the analysis of aggregated point data across stable geographic units of space, as opposed to those arbitrary boundaries set by administrative entities, such as census tracts. Here, counts of 311 calls for vacant buildings are aggregated to the cell units. Through this process, we find that a majority of cells (\>64%) do not contain calls for vacant building, re-affirming the earlier observation of inconsistent observations of this event, with high concentrations of calls occurring in bounded parts of the city. A mapped visualization of the count of vacant buildings within cells provides another perspective to visualize the distribution and clustering patterns of vacant buildings. Indeed, one can more clearly see that many grid cells have values of 0, which could indicate that the data of vacant building service requests is skewed. This means that this data may not be suitable for count regression as the Poisson regression assumes that the mean of a random variable should be equal to its variance. In this case, the data appears to be overdispersed, in which case the variance is likely greater than the mean. The Negative Binomial regression may be a better option to accommodate data of this type.
+
+##### Create 500m x 500m Fishnet Grid
+
+```{r create-fishnet}
+# Create 500m x 500m grid
+fishnet <- st_make_grid(
+  chicagoBoundary,
+  cellsize = 500,  # 500 meters per cell
+  square = TRUE
+) %>%
+  st_sf() %>%
+  mutate(uniqueID = row_number()) %>%
+  st_transform('ESRI:102271') 
+
+# Keep only cells that intersect Chicago
+fishnet <- fishnet[chicagoBoundary, ]
+
+# View basic info
+cat("✓ Created fishnet grid\n")
+cat("  - Number of cells:", nrow(fishnet), "\n")
+cat("  - Cell size:", 500, "x", 500, "meters\n")
+cat("  - Cell area:", round(st_area(fishnet[1,])), "square meters\n")
+```
+
+##### Aggregate Vacant Buildings to Grid
+
+```{r}
+# Spatial join: which cell contains each vacant building?
+vbldg_fishnet <- st_join(vacant_bldg, fishnet, join = st_within) %>%
+  st_drop_geometry() %>%
+  group_by(uniqueID) %>%
+  summarize(vacant_bldg = n()) 
+
+glimpse(vbldg_fishnet)
+st_crs(vbldg_fishnet)
+
+# Join back to fishnet (cells with 0 vacant buildings will be NA)
+fishnet <- fishnet %>%
+  left_join(vbldg_fishnet, by = "uniqueID") %>%
+  mutate(vacant_bldg = replace_na(vacant_bldg, 0))
+
+# Summary statistics
+cat("\nVacant building count distribution:\n")
+summary(fishnet$vacant_bldg)
+cat("\nCells with zero vacant buildings:", 
+    sum(fishnet$vacant_bldg == 0), 
+    "/", nrow(fishnet),
+    "(", round(100 * sum(fishnet$vacant_bldg == 0) / nrow(fishnet), 1), "%)\n")
+```
+
+##### Visualize Fishnet
+
+```{r visualize-fishnet}
+#| fig-width: 8
+#| fig-height: 6
+
+# Visualize aggregated counts
+ggplot() +
+  geom_sf(data = fishnet, aes(fill = vacant_bldg), color = NA) +
+  geom_sf(data = chicagoBoundary, fill = NA, color = "white", linewidth = 1) +
+  scale_fill_viridis_c(
+    name = "Vacant Buildings",
+    option = "plasma",
+    trans = "sqrt",  # Square root for better visualization of skewed data
+    breaks = c(0, 1, 5, 10, 20)
+  ) +
+  labs(
+    title = "Vacant Building 311 Calls",
+    subtitle = "500m x 500m cells, Chicago 2017"
+  ) +
+  theme_crime()
+
+```
+
+#### Part 3: Spatial Features
+
+Setting up the fishnet grid in the previous section, sets up the analysis for calculating k-nearest neighbor features. In other words, we may find the mean distance to the 3 nearest vacant buildings based on the centroid of each grid cell. The fishnet further supports the calculation of the Local Moran's I of vacant building service requests across different parts of the city. Performing a Local Moran's I analysis provides an empirical basis for identifying the true "hotspots" of 311 calls for vacant buildings and others that are "coldspots" and finally, spatial outliers. These hotspots, based on the final map in this section, appear to reflect the earlier kernel density map visualization. The map demonstrates specifically that in hotspot areas, one location's high count of 311 calls is more similar to its neighbors' counts than what would be expected by chance. As such, hotspots are defined by zones where a single location and its neighbors have similarly high counts and thus could be classified as hot spots of disorder - zones of interest for understanding how vacant buildings relate to burglaries under the "broken windows theory". The map of the local moran's I reveals that there are no significant "coldspots" or zones where low call counts are similar to neighboring low call counts, but that "hotspots" are indeed present in the city. We also see that there are some areas in the city that are potential "spatial outliers" where low call count values are surrounded by high count call values in neighboring cells.
+
+Finally, with this information, it is now possible to create a new spatial feature variable to include in our predictive model: distance to hotspots. This is done by identifiying all hotspot- qualifying cells, or the "High-High" cells, extracting each cells' centroid and calculating a new variable that represents the distance between the "High-High" cell and all other cells. This calculation effectively allows us to see where each cell's nearest hotspot is.
+
+##### Calculate k-nearest neighbor features
+
+```{r nn-feature}
+#| message: false
+
+# Get coordinates
+fishnet_coords <- st_coordinates(st_centroid(fishnet))
+vbldg_coords <- st_coordinates(vacant_bldg)
+
+# Calculate k nearest neighbors and distances
+nn_result <- get.knnx(vbldg_coords, fishnet_coords, k = 3)
+
+# Add to fishnet
+fishnet <- fishnet %>%
+  mutate(
+    vacant_bldg.nn = rowMeans(nn_result$nn.dist)
+  )
+
+cat("✓ Calculated nearest neighbor distances\n")
+summary(fishnet$vacant_bldg.nn)
+```
+
+##### Perform Local Moran's I analysis
+
+```{r local-morans-I}
+# Function to calculate Local Moran's I
+calculate_local_morans <- function(data, variable, k = 5) {
+  
+  # Create spatial weights
+  coords <- st_coordinates(st_centroid(data))
+  neighbors <- knn2nb(knearneigh(coords, k = k))
+  weights <- nb2listw(neighbors, style = "W", zero.policy = TRUE)
+  
+  # Calculate Local Moran's I
+  local_moran <- localmoran(data[[variable]], weights)
+  
+  # Classify clusters
+  mean_val <- mean(data[[variable]], na.rm = TRUE)
+  
+  data %>%
+    mutate(
+      local_i = local_moran[, 1],
+      p_value = local_moran[, 5],
+      is_significant = p_value < 0.05,
+      
+      moran_class = case_when(
+        !is_significant ~ "Not Significant",
+        local_i > 0 & .data[[variable]] > mean_val ~ "High-High",
+        local_i > 0 & .data[[variable]] <= mean_val ~ "Low-Low",
+        local_i < 0 & .data[[variable]] > mean_val ~ "High-Low",
+        local_i < 0 & .data[[variable]] <= mean_val ~ "Low-High",
+        TRUE ~ "Not Significant"
+      )
+    )
+}
+
+# Apply to abandoned cars
+fishnet <- calculate_local_morans(fishnet, "vacant_bldg", k = 5)
+```
+
+##### Identify hot spots and cold spots
+
+```{r identify-hotspots}
+#| fig-width: 8
+#| fig-height: 6
+
+# Visualize hot spots
+ggplot() +
+  geom_sf(
+    data = fishnet, 
+    aes(fill = moran_class), 
+    color = NA
+  ) +
+  scale_fill_manual(
+    values = c(
+      "High-High" = "#d7191c",
+      "High-Low" = "#fdae61",
+      "Low-High" = "#abd9e9",
+      "Low-Low" = "#2c7bb6",
+      "Not Significant" = "gray90"
+    ),
+    name = "Cluster Type"
+  ) +
+  labs(
+    title = "Local Moran's I: Vacant Building Clusters",
+    subtitle = "High-High = Hot spots of disorder"
+  ) +
+  theme_crime()
+```
+
+##### Create distance-to-hotspot measures
+
+```{r}
+# Get centroids of "High-High" cells (hot spots)
+hotspots <- fishnet %>%
+  filter(moran_class == "High-High") %>%
+  st_centroid()
+
+# Calculate distance from each cell to nearest hot spot
+if (nrow(hotspots) > 0) {
+  fishnet <- fishnet %>%
+    mutate(
+      dist_to_hotspot = as.numeric(
+        st_distance(st_centroid(fishnet), hotspots %>% st_union())
+      )
+    )
+  
+  cat("✓ Calculated distance to vacant building hot spots\n")
+  cat("  - Number of hot spot cells:", nrow(hotspots), "\n")
+} else {
+  fishnet <- fishnet %>%
+    mutate(dist_to_hotspot = 0)
+  cat("⚠ No significant hot spots found\n")
+}
+```
+
+#### Part 4: Count Regression Models
+
+This section lays the remaining groundwork to be able to build count regression models to predict the number of burglaries in a given area, using the number of vacant building service requests and the spatially engineered variable, proximity to hotspots of this service request type. The first step is to join the burglary data to the earlier fishnet dataframe that contains the total counts per cell of 311 calls, the k-nearest neighbor of vacant building calls, local moran's i values for each cell and their respective p-values, as well as the distance to hotspots spatially engineered variable. Specifically, we join the count of burglaries per cell to the fishnet dataframe as it is this particular value we want the model to predict.
+
+Upon completing the previous steps, we can observe that a low share of cells (\~30%) have zero burglaries, indicating that burglary incidents were relatively widespread across the city during the 2017. This contrasts with the spread of vacant building service requests that are more spatially clustered.
+
+To prepare for a cross-validation analysis of the regression models, this section joins the police district boundaries to the fishnet dataframe as these are the geographic units that will be used to conduct the spatial cross-validation. In other words, this will allow a better understanding of the model's performance in accurately predicting burglaries in the different police districts.
+
+The final step prior to running the Poisson and Negative Binomial regression is the assembly of selected variables in the broader fishnet dataframe, specifically selecting the following: uniqueID, District, countBurglaries, vacant_bldg, vacant_bldg.nn, dist_to_hotspot. These are the particular variables that will go into building and running each regression model.
+
+##### Prepare Poisson Regression: Aggregate Burglaries to Grid
+
+```{r prepare-data-pt1}
+
+# Spatial join: which cell contains each burglary?
+burglaries_fishnet <- st_join(burglaries, fishnet, join = st_within) %>%
+  st_drop_geometry() %>%
+  group_by(uniqueID) %>%
+  summarize(countBurglaries = n()) 
+
+
+glimpse(burglaries_fishnet)
+st_crs(burglaries_fishnet)
+
+# Join back to fishnet (cells with 0 burglaries will be NA)
+fishnet <- fishnet %>%
+  left_join(burglaries_fishnet, by = "uniqueID") %>%
+  mutate(countBurglaries = replace_na(countBurglaries, 0))
+
+# Summary statistics
+cat("\nBurglary count distribution:\n")
+summary(fishnet$countBurglaries)
+cat("\nCells with zero burglaries:", 
+    sum(fishnet$countBurglaries == 0), 
+    "/", nrow(fishnet),
+    "(", round(100 * sum(fishnet$countBurglaries == 0) / nrow(fishnet), 1), "%)\n")
+
+
+```
+
+##### Prepare Poisson Regression: Join Police Districts to Fishnet
+
+```{r prepare-data-pt2}
+# I will use police districts for the spatial cross-validation
+# Join district information to fishnet
+fishnet <- st_join(
+  fishnet,
+  policeDistricts,
+  join = st_within,
+  left = TRUE
+) %>%
+  filter(!is.na(District))  # Remove cells outside districts
+
+cat("✓ Joined police districts\n")
+cat("  - Districts:", length(unique(fishnet$District)), "\n")
+cat("  - Cells:", nrow(fishnet), "\n")
+```
+
+##### Prepare Poisson Regression: Assembling Fishnet Model
+
+```{r prepare-data-pt3}
+
+# Create clean modeling dataset
+fishnet_model <- fishnet %>%
+  st_drop_geometry() %>%
+  dplyr::select(
+    uniqueID,
+    District,
+    countBurglaries,
+    vacant_bldg,
+    vacant_bldg.nn,
+    dist_to_hotspot
+  ) %>%
+  na.omit()  # Remove any remaining NAs
+
+cat("✓ Prepared modeling data\n")
+cat("  - Observations:", nrow(fishnet_model), "\n")
+cat("  - Variables:", ncol(fishnet_model), "\n")
+```
+
+##### Fit Poisson Regression
+
+```{r fit-poisson}
+# Fit Poisson regression
+model_poisson <- glm(
+  countBurglaries ~ vacant_bldg + vacant_bldg.nn + 
+    dist_to_hotspot,
+  data = fishnet_model,
+  family = "poisson"
+)
+
+# Summary
+summary(model_poisson)
+```
+
+##### Fit Negative Binomial Regression
+
+```{r fit-negative-binomial}
+
+# Fit Negative Binomial model
+model_nb <- glm.nb(
+  countBurglaries ~ vacant_bldg + vacant_bldg.nn + 
+    dist_to_hotspot,
+  data = fishnet_model
+)
+
+# Summary
+summary(model_nb)
+
+# Compare AIC (lower is better)
+cat("\nModel Comparison:\n")
+cat("Poisson AIC:", round(AIC(model_poisson), 1), "\n")
+cat("Negative Binomial AIC:", round(AIC(model_nb), 1), "\n")
+```
+
+##### Compare model fit (AIC)
+
+```{r}
+# Table comparing both model's AIC values
+
+comparison <- tibble(
+  Model = c("Poisson", "Negative Binomial"),
+  AIC = c(AIC(model_poisson), AIC(model_nb))
+) %>% 
+  kable(
+    digits = 1,
+    caption = "Comparison of Poisson and Negative Binomial Regression Models by AIC Value"
+  ) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+comparison
+
+```
+
+```{r model_nb-interpreation}
+
+model_nb_tidy <- broom::tidy(model_nb, exponentiate = TRUE)
+
+model_nb_tidy %>% 
+  kable(
+    digits = 3,
+    caption = "Negative Binomial Model Coefficients (Exponentiated)",
+    col.names = c("Variable", "Rate Ratio", "Std. Error", "Z", "p-value")
+  ) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+For the Poisson regression model, both coefficients, vacant_bldg (count of vacant building service requests) and vacant_bldg.nn (the mean distance to the 3 nearest vacant building service requests), were significant predictors for burglaries, while the dist_to_hotspot coefficient was not significant. The Negative Binomial regression similarly shows that the same coefficients are significant predictors in the model. Both models produce an output AIC value which allows the comparison of model fit of the two models. A lower AIC typically indicates a better fitting model. In this case, the Poisson regression has an AIC of 9302.7 while the Negative binomial model has one of 7775.5. Thus, the Negative Binomial regression produces a better fitting model for predicting burglaries than the Poisson regression, and is therefore a more appropriate model to use for prediction analysis.
+
+Interpreting the results of the Negative Binomial regression model is slightly less straightforward than an OLS model as it is a log-link model, meaning that the model coefficient values represent a logged rate ratio. To better interpret the coefficient values, one must take the value's exponential. Within the Negative Binomial model, the coefficients of its significant predictors, vacant_bldg and vacant_bldg.nn, can be interpreted as follows: for each additional vacant building service request in a given cell, the expected burglary count increases on average by 4.6%; and each additional foot of distance from a vacant building service request is associated with a 0.1% decrease in expected burglaries.
+
+#### Part 5: Spatial Cross-Validation (2017)
+
+This part of the analysis documents the spatial cross-validation of the preferred model, Negative Binomial. The specific cross-validation method that is most appropriate for analyzing a spatial regression model is that of Leave-One-Group-Out (LOGO). This method is used as opposed to standard cross-validation because it better accounts for spatial leakage. Instead, LOGO conducts cross-validation by training on all district groups and testing on the remaining group, where ultimately each district group has been left out as the testing group.
+
+##### Leave-One-Group-Out cross-validation on 2017 data
+
+```{r spatial-cv}
+# Get unique districts
+districts <- unique(fishnet_model$District)
+cv_results <- tibble()
+
+cat("Running LOGO Cross-Validation...\n")
+
+for (i in seq_along(districts)) {
+  
+  test_district <- districts[i]
+  
+  # Split data
+  train_data <- fishnet_model %>% filter(District != test_district)
+  test_data <- fishnet_model %>% filter(District == test_district)
+  
+  # Fit model on training data
+  model_cv <- glm.nb(
+    countBurglaries ~ vacant_bldg + vacant_bldg.nn + 
+      dist_to_hotspot,
+    data = train_data
+  )
+  
+  # Predict on test data
+  test_data <- test_data %>%
+    mutate(
+      prediction = predict(model_cv, test_data, type = "response")
+    )
+  
+  # Calculate metrics
+  mae <- mean(abs(test_data$countBurglaries - test_data$prediction))
+  rmse <- sqrt(mean((test_data$countBurglaries - test_data$prediction)^2))
+  
+  # Store results
+  cv_results <- bind_rows(
+    cv_results,
+    tibble(
+      fold = i,
+      test_district = test_district,
+      n_test = nrow(test_data),
+      mae = mae,
+      rmse = rmse
+    )
+  )
+  
+  cat("  Fold", i, "/", length(districts), "- District", test_district, 
+      "- MAE:", round(mae, 2), "\n")
+}
+
+# Overall results
+cat("\n✓ Cross-Validation Complete\n")
+cat("Mean MAE:", round(mean(cv_results$mae), 2), "\n")
+cat("Mean RMSE:", round(mean(cv_results$rmse), 2), "\n")
+```
+
+##### Calculate and report error metrics (MAE, RMSE)
+
+```{r cv-results-table}
+# Show results
+cv_results %>%
+  arrange(desc(mae)) %>%
+  kable(
+    digits = 2,
+    caption = "LOGO CV Results by District"
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+The cross-validation results demonstrate that the negative binomial model outputs a mean RMSE of 3.52, or produces a mean error estimate of expected burglaries by plus or minus 3.52. Furthermore, looking at the error statistics associated with each police district in descending order reveals that the model is especially not as good at producing accurate burglary count estimates within police districts 3, 7, 12, 14, and 6 - where all RMSE values are above the mean (3.52).
+
+#### Part 6: Model Evaluation
+
+To further evaluate the fit of the negative binomial model, we can compare it to the KDE baseline map that serves as a proxy "null hypothesis" which asks the question: "What if crime just happens where it happened before?". This KDE baseline model is generated from creating a kernel density map of burglary counts across Chicago, revealing possible hotspots. A side-by-side comparison of actual burglary counts, those predicted by the model, and those proposed by the KDE baseline provides some evidence that the model does not outperform the KDE baseline and therefore, could be improved. For example, the map of predicted values appears to under-predict the count of burglaries in the northeast section of the city, where the KDE baseline predicts around the same amount of burglaries in this area as the map of actual burglaries shows.
+
+Mapping the model's errors and absolute errors reveals a similar pattern: the model underpredicts in northern parts of the city. These maps also show that the model is not performing much better in the southern parts of the city even though the mapped predicted values in this area looked more similar to the mapped actual values. Instead, the mapped error values show that the model underpredicts burglaries in southern Chicago as well, while more frequently overpredicting in central and far north and south areas.
+
+##### Create KDE baseline
+
+```{r KDE-baseline-model}
+#| message: false
+
+# Convert burglaries to ppp (point pattern) format for spatstat
+burglaries_ppp <- as.ppp(
+  st_coordinates(burglaries),
+  W = as.owin(st_bbox(chicagoBoundary))
+)
+
+# Calculate KDE with 1km bandwidth
+kde_burglaries <- density.ppp(
+  burglaries_ppp,
+  sigma = 1000,  # 1km bandwidth
+  edge = TRUE    # Edge correction
+)
+
+# Convert to terra raster (modern approach, not raster::raster)
+kde_raster <- rast(kde_burglaries)
+
+# Extract KDE values to fishnet cells
+fishnet <- fishnet %>%
+  mutate(
+    kde_value = terra::extract(
+      kde_raster,
+      vect(fishnet),
+      fun = mean,
+      na.rm = TRUE
+    )[, 2]  # Extract just the values column
+  )
+
+cat("✓ Calculated KDE baseline\n")
+```
+
+```{r final-predictions}
+# Fit final model on all data
+final_model <- glm.nb(
+  countBurglaries ~ vacant_bldg + vacant_bldg.nn + 
+    dist_to_hotspot,
+  data = fishnet_model
+)
+
+# Add predictions back to fishnet
+fishnet <- fishnet %>%
+  mutate(
+    prediction_nb = predict(final_model, fishnet_model, type = "response")[match(uniqueID, fishnet_model$uniqueID)]
+  )
+
+# Also add KDE predictions (normalize to same scale as counts)
+kde_sum <- sum(fishnet$kde_value, na.rm = TRUE)
+count_sum <- sum(fishnet$countBurglaries, na.rm = TRUE)
+fishnet <- fishnet %>%
+  mutate(
+    prediction_kde = (kde_value / kde_sum) * count_sum
+  )
+```
+
+```{r compare-models-visualization}
+#| fig-width: 12
+#| fig-height: 4
+
+# Create three maps
+p1 <- ggplot() +
+  geom_sf(data = fishnet, aes(fill = countBurglaries), color = NA) +
+  scale_fill_viridis_c(name = "Count", option = "plasma", limits = c(0, 15)) +
+  labs(title = "Actual Burglaries") +
+  theme_crime()
+
+p2 <- ggplot() +
+  geom_sf(data = fishnet, aes(fill = prediction_nb), color = NA) +
+  scale_fill_viridis_c(name = "Predicted", option = "plasma", limits = c(0, 15)) +
+  labs(title = "Model Predictions (Neg. Binomial)") +
+  theme_crime()
+
+p3 <- ggplot() +
+  geom_sf(data = fishnet, aes(fill = prediction_kde), color = NA) +
+  scale_fill_viridis_c(name = "Predicted", option = "plasma", limits = c(0, 15)) +
+  labs(title = "KDE Baseline Predictions") +
+  theme_crime()
+
+p1 + p2 + p3 +
+  plot_annotation(
+    title = "Actual vs. Predicted Burglaries",
+    subtitle = "Does our complex model outperform simple KDE?"
+  )
+```
+
+##### Evaluating Model Errors: Where Does The Model Work Well?
+
+```{r prediction-errors}
+#| fig-width: 10
+#| fig-height: 5
+
+# Calculate errors
+fishnet <- fishnet %>%
+  mutate(
+    error_nb = countBurglaries - prediction_nb,
+    error_kde = countBurglaries - prediction_kde,
+    abs_error_nb = abs(error_nb),
+    abs_error_kde = abs(error_kde)
+  )
+
+# Map errors
+p1 <- ggplot() +
+  geom_sf(data = fishnet, aes(fill = error_nb), color = NA) +
+  scale_fill_gradient2(
+    name = "Error",
+    low = "#2166ac", mid = "white", high = "#b2182b",
+    midpoint = 0,
+    limits = c(-10, 10)
+  ) +
+  labs(title = "Model Errors (Actual - Predicted)") +
+  theme_crime()
+
+p2 <- ggplot() +
+  geom_sf(data = fishnet, aes(fill = abs_error_nb), color = NA) +
+  scale_fill_viridis_c(name = "Abs. Error", option = "magma") +
+  labs(title = "Absolute Model Errors") +
+  theme_crime()
+
+p1 + p2
+```

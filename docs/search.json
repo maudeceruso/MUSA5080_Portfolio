@@ -252,13 +252,6 @@
     "text": "Apply dplyr functions to real census data for policy analysis\nEvaluate data quality using margins of error\nConnect technical analysis to algorithmic decision-making\nIdentify potential equity implications of data reliability issues\nCreate professional documentation for policy stakeholders"
   },
   {
-    "objectID": "labs/lab1/lab1_Ceruso.html#submission-instructions",
-    "href": "labs/lab1/lab1_Ceruso.html#submission-instructions",
-    "title": "Lab 1: Census Data Quality for Policy Decisions",
-    "section": "",
-    "text": "Submit by posting your updated portfolio link on Canvas. Your assignment should be accessible at your-portfolio-url/labs/lab_1/\nMake sure to update your _quarto.yml navigation to include this assignment under an “Labs” menu."
-  },
-  {
     "objectID": "labs/lab1/lab1_Ceruso.html#data-retrieval",
     "href": "labs/lab1/lab1_Ceruso.html#data-retrieval",
     "title": "Lab 1: Census Data Quality for Policy Decisions",

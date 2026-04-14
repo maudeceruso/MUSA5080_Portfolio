@@ -32,6 +32,7 @@ The first part of the analysis begins with loading all geographic boundary data 
 ```{r setup}
 #| message: false
 #| warning: false
+#| include: false
 
 # Load required packages
 library(tidyverse)      # Data manipulation
@@ -80,6 +81,7 @@ cat("✓ Working directory:", getwd(), "\n")
 
 ```{r load-boundaries}
 #| message: false
+#| results: hide
 
 # Load police districts (used for spatial cross-validation)
 policeDistricts <- 
@@ -107,6 +109,7 @@ cat("  - Police beats:", nrow(policeBeats), "\n")
 
 ```{r load-burglaries}
 #| message: false
+#| results: hide
 
 # Load from provided data file (downloaded from Chicago open data portal)
 burglaries <- st_read(here("data", "burglaries.shp")) %>% 
@@ -127,6 +130,7 @@ cat("  - Date range:", format(min(burglaries$Date, na.rm = TRUE)), "to",
 
 ```{r load-vacant-buildings}
 #| message: false
+#| results: hide
 
 vacant_bldg <- read_csv(here("labs/lab4/lab4data/311_Service_Requests_-_Vacant_and_Abandoned_Buildings_Reported_-_Historical_20260407.csv")) %>%
   rename(date = `DATE SERVICE REQUEST WAS RECEIVED`) %>% 
@@ -243,6 +247,9 @@ This section applies a fishnet grid of 500m x 500m to the boundaries of Chicago.
 ##### Create 500m x 500m Fishnet Grid
 
 ```{r create-fishnet}
+#| message: false
+#| results: hide
+
 # Create 500m x 500m grid
 fishnet <- st_make_grid(
   chicagoBoundary,
@@ -266,6 +273,9 @@ cat("  - Cell area:", round(st_area(fishnet[1,])), "square meters\n")
 ##### Aggregate Vacant Buildings to Grid
 
 ```{r}
+#| message: false
+#| results: hide
+
 # Spatial join: which cell contains each vacant building?
 vbldg_fishnet <- st_join(vacant_bldg, fishnet, join = st_within) %>%
   st_drop_geometry() %>%
@@ -323,6 +333,7 @@ Finally, with this information, it is now possible to create a new spatial featu
 
 ```{r nn-feature}
 #| message: false
+#| results: hide
 
 # Get coordinates
 fishnet_coords <- st_coordinates(st_centroid(fishnet))
@@ -344,6 +355,9 @@ summary(fishnet$vacant_bldg.nn)
 ##### Perform Local Moran's I analysis
 
 ```{r local-morans-I}
+#| message: false
+#| results: hide
+
 # Function to calculate Local Moran's I
 calculate_local_morans <- function(data, variable, k = 5) {
   
@@ -412,6 +426,9 @@ ggplot() +
 ##### Create distance-to-hotspot measures
 
 ```{r}
+#| message: false
+#| results: hide
+
 # Get centroids of "High-High" cells (hot spots)
 hotspots <- fishnet %>%
   filter(moran_class == "High-High") %>%
@@ -448,6 +465,8 @@ The final step prior to running the Poisson and Negative Binomial regression is 
 ##### Prepare Poisson Regression: Aggregate Burglaries to Grid
 
 ```{r prepare-data-pt1}
+#| message: false
+#| results: hide
 
 # Spatial join: which cell contains each burglary?
 burglaries_fishnet <- st_join(burglaries, fishnet, join = st_within) %>%
@@ -478,6 +497,9 @@ cat("\nCells with zero burglaries:",
 ##### Prepare Poisson Regression: Join Police Districts to Fishnet
 
 ```{r prepare-data-pt2}
+#| message: false
+#| results: hide
+
 # I will use police districts for the spatial cross-validation
 # Join district information to fishnet
 fishnet <- st_join(
@@ -496,6 +518,8 @@ cat("  - Cells:", nrow(fishnet), "\n")
 ##### Prepare Poisson Regression: Assembling Fishnet Model
 
 ```{r prepare-data-pt3}
+#| message: false
+#| results: hide
 
 # Create clean modeling dataset
 fishnet_model <- fishnet %>%
@@ -518,6 +542,9 @@ cat("  - Variables:", ncol(fishnet_model), "\n")
 ##### Fit Poisson Regression
 
 ```{r fit-poisson}
+#| message: false
+#| results: hide
+
 # Fit Poisson regression
 model_poisson <- glm(
   countBurglaries ~ vacant_bldg + vacant_bldg.nn + 
@@ -533,6 +560,8 @@ summary(model_poisson)
 ##### Fit Negative Binomial Regression
 
 ```{r fit-negative-binomial}
+#| message: false
+#| results: hide
 
 # Fit Negative Binomial model
 model_nb <- glm.nb(
@@ -593,6 +622,9 @@ This part of the analysis documents the spatial cross-validation of the preferre
 ##### Leave-One-Group-Out cross-validation on 2017 data
 
 ```{r spatial-cv}
+#| message: false
+#| results: hide
+
 # Get unique districts
 districts <- unique(fishnet_model$District)
 cv_results <- tibble()
@@ -671,6 +703,7 @@ Mapping the model's errors and absolute errors reveals a similar pattern: the mo
 
 ```{r KDE-baseline-model}
 #| message: false
+#| results: hide
 
 # Convert burglaries to ppp (point pattern) format for spatstat
 burglaries_ppp <- as.ppp(
@@ -703,6 +736,9 @@ cat("✓ Calculated KDE baseline\n")
 ```
 
 ```{r final-predictions}
+#| message: false
+#| results: hide
+
 # Fit final model on all data
 final_model <- glm.nb(
   countBurglaries ~ vacant_bldg + vacant_bldg.nn + 

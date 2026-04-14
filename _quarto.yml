@@ -28,6 +28,7 @@ format:
     toc: true
     toc-location: left
     code-fold: true
+    code-summary: "Show code"
 
 execute:
   freeze: auto

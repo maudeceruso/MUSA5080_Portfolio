@@ -21,7 +21,7 @@ editor:
 
 ## Scenario
 
-You are a data analyst for the **\[Your State\] Department of Human
+You are a data analyst for the **New York Department of Human
 Services**. The department is considering implementing an algorithmic
 system to identify communities that should receive priority for social
 service funding and outreach programs. Your supervisor has asked you to
@@ -40,32 +40,11 @@ communities might be affected by data quality issues.
 -   Identify potential equity implications of data reliability issues
 -   Create professional documentation for policy stakeholders
 
-## Submission Instructions
-
-**Submit by posting your updated portfolio link on Canvas.** Your
-assignment should be accessible at `your-portfolio-url/labs/lab_1/`
-
-Make sure to update your `_quarto.yml` navigation to include this
-assignment under an "Labs" menu.
-
-# Part 1: Portfolio Integration
-
-Create this assignment in your portfolio repository under an
-`labs/lab_1/` folder structure. Update your navigation menu to include:
-
-```         
-- text: Assignments
-  menu:
-    - href: labs/lab_1/your_file_name.qmd
-      text: "Lab 1: Census Data Exploration"
-```
-
-If there is a special character like a colon, you need use double quote
-mark so that the quarto can identify this as text
-
-# Setup
+# Part 1: Setup
 
 ```{r setup}
+#| echo: false
+
 # Load required packages (hint: you need tidycensus, tidyverse, and knitr)
 library(tidycensus)
 library(tidyverse)
@@ -78,8 +57,7 @@ census_api_key("c61294d533815353a666f356be78c2a75d0b1f00")
 my_state <- "New York"
 ```
 
-**State Selection:** I have chosen **New York** for this analysis
-because: this is my home state.
+**State Selection:** I have chosen **New York** for this analysis.
 
 # Part 2: County-Level Resource Assessment
 
@@ -96,6 +74,11 @@ household income (B19013_001) and total population (B01003_001)\
 `variables = c(name = "code")` syntax.
 
 ```{r county-data}
+#| message: false
+#| warning: false
+#| include: false
+
+  
 # Write your get_acs() code here
 state_data <- get_acs(
   geography = "county",
@@ -135,6 +118,10 @@ estimate) \* 100 - Create reliability categories: - High Confidence: MOE
 **Hint:** Use `mutate()` with `case_when()` for the categories.
 
 ```{r income-reliability}
+#| message: false
+#| warning: false
+
+
 # Calculate MOE percentage and reliability categories using mutate()
 ny_reliability <- ny_clean %>%
   mutate(moe_percentage = round((medHHincM / medHHincE)* 100, 2),
@@ -163,6 +150,9 @@ using `kable()`
 **Hint:** Use `arrange()`, `slice()`, and `select()` functions.
 
 ```{r high-uncertainty}
+#| message: false
+#| warning: false
+
 # Create table of top 5 counties by MOE percentage
 high_uncertainty <- ny_reliability %>% 
   filter(moe_percentage > 8) %>% 

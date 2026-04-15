@@ -35,7 +35,7 @@ findings effectively for policy audiences
 **Which Pennsylvania counties have the highest proportion of vulnerable
 populations (elderly + low-income) living far from hospitals?**
 
-Your analysis should identify counties that should be priorities for
+This analysis should identify counties that should be priorities for
 healthcare investment and policy intervention.
 
 ### Required Analysis Steps
@@ -65,8 +65,15 @@ setwd(dir = "/Users/maudeceruso/Documents/GitHub/MUSA5080_Portfolio")
 ```
 
 ```{r}
+#| message: false
+#| warning: false
+
 # Load spatial data
-pa_counties <- st_read("data/Pennsylvania_County_Boundaries.shp")
+pa_counties <- st_read("data/Pennsylvania_County_Boundaries (1)/Pennsylvania_County_Boundaries.shp")
+st_crs(pa_counties)
+st_bbox(pa_counties)
+st_geometry(pa_counties)
+
 
 hospitals <- st_read("data/hospitals.geojson")
 hospitals <- hospitals %>%
@@ -75,31 +82,36 @@ hospitals <- hospitals %>%
 census_tracts <- tracts(state = "PA", cb = TRUE)
 census_tracts <- census_tracts %>%
   st_transform(st_crs(pa_counties))
-               
+
+```
+
+```{r}
+#| message: false
+#| warning: false
+
 # Check that all data loaded correctly
 glimpse(pa_counties)
 st_crs(pa_counties)
 st_geometry(pa_counties)
-  # plot with ggplot2
+```
+
+```{r}
+# plot with ggplot2
 ggplot(pa_counties) +
   geom_sf() +
   theme_void()
-
-st_crs(hospitals)
-
-st_crs(census_tracts)
 ```
 
 **Questions to answer:** - How many hospitals are in your dataset? - How
 many census tracts? - What coordinate reference system is each dataset
 in?
 
-\- There are 223 hospitals in the dataset.
+-   There are 223 hospitals in the dataset.
 
-\- There are 3,445 census tracts in the dataset.
+-   There are 3,445 census tracts in the dataset.
 
-\- Each dataset is in the WGS 84 / Pseudo-Mercator coordinate reference
-system.
+-   Each dataset is in the WGS 84 / Pseudo-Mercator coordinate reference
+    system.
 
 ------------------------------------------------------------------------
 
@@ -162,9 +174,7 @@ mean(census_tracts$median_incomeE, na.rm = TRUE)
 many tracts have missing income data? - What is the median income across
 all PA census tracts?
 
--   I am using the 2022 ACS 5-year data (because I wasn't sure what
-    years the census tracts and hospitals data came from, but assumed it
-    was the same as the year of data used in class - 2022)
+-   I am using the 2022 ACS 5-year data.
 
 -   62 tracts have missing median income data
 
@@ -183,7 +193,6 @@ threshold)
 
 ```{r}
 # Filter for vulnerable tracts based on your criteria
-
 summary(census_tracts$pct_over_65)
 hist(census_tracts$pct_over_65)
 summary(census_tracts$median_incomeE)
@@ -209,8 +218,7 @@ census tracts are considered vulnerable by your definition?
     over 23%, which indicates that the share of the population aged 65
     and above is likely higher than usual when it reaches values of 23%
     or higher, therefore areas where the 65 and above population makes
-    up more than 23% of the population should be given greater attention
-    by being labeled as vulnerable.
+    up more than 23% of the population should receive greater attention.
 
 -   Almost 5% (4.88%) of tracts are categorized as vulnerable under the
     set thresholds.
@@ -269,8 +277,8 @@ many vulnerable tracts are more than 15 miles from the nearest hospital?
 -   The average distance to the nearest hospital for vulnerable tracts
     is 4.71 miles.
 
--   The greatest distance a vulnerable tract is from the nearest
-    hospital is about 19.16 miles.
+-   The greatest distance between a vulnerable tract and the nearest
+    hospital is about 19 miles.
 
 -   There are 9 tracts whose nearest hospitals are more than 15 miles
     away.
@@ -285,6 +293,9 @@ from the nearest hospital.
 **Your Task:**
 
 ```{r}
+#| message: false
+#| warning: false
+
 # Create underserved variable
 v_tracts_with_dist <- v_tracts_with_dist %>%
   mutate(underserved = case_when(
@@ -311,12 +322,12 @@ you? Why or why not?
 
 -   About 5.4% of **vulnerable tracts** are underserved - this is not
     super surprising given that the average tract is under 5 miles away
-    from the nearest hospital. Furthermore, looking at the distribution
-    of nearest distances, the distribution skews left, meaning that most
-    tracts are more likely to be closer than 4.7 miles away from a
-    hospital rather than further away. Also, the plot of hospitals shows
-    that Pennsylvania seems to have a fairly evenly distributed scatter
-    of hospitals, making it less likely for tracts to be underserved.
+    from the nearest hospital. Furthermore, the distribution of nearest
+    distances skews right, meaning that most tracts are more likely to
+    be closer than 4.7 miles away from a hospital rather than further
+    away. Also, the plot of hospitals shows that Pennsylvania seems to
+    have a fairly evenly distributed scatter of hospitals, making it
+    less likely for tracts to be underserved.
 
 ------------------------------------------------------------------------
 
@@ -331,12 +342,15 @@ about vulnerable populations and hospital access.
 # Spatial join tracts to counties
 
   #match projection of tracts to counties
-pa_counties_projected <- pa_counties %>%
-  st_transform(crs = 3365)
+pa_counties_projected <- pa_counties %>% 
+  st_transform(4326)
+v_tracts_projected <- v_tracts_with_dist %>%       # force correct CRS if needed
+  st_transform(4326)
+
 st_crs(pa_counties_projected) == st_crs(v_tracts_with_dist) #TRUE
 
   #spatial join for vulnerable tracts- each tract gets county attributes
-v_tracts_joined <- v_tracts_with_dist %>%
+v_tracts_joined <- v_tracts_projected %>%
   st_join(pa_counties_projected, largest = TRUE)
 
 # Aggregate statistics by county
@@ -444,7 +458,6 @@ county_summaries %>%
   row_spec(0, bold = TRUE)
 
 ```
-
 
 **Requirements:** - Use `knitr::kable()` or similar for formatting -
 Include descriptive column names - Format numbers appropriately (commas
@@ -573,63 +586,6 @@ caption or in text)
 
 ## Part 3: Bring Your Own Data Analysis
 
-Choose your own additional spatial dataset and conduct a supplementary
-analysis.
-
-### Challenge Options
-
-Choose ONE of the following challenge exercises, or propose your own
-research question using OpenDataPhilly data
-(https://opendataphilly.org/datasets/).
-
-**Note these are just loose suggestions to spark ideas - follow or make
-your own as the data permits and as your ideas evolve. This analysis
-should include bringing in your own dataset, ensuring the projection/CRS
-of your layers align and are appropriate for the analysis (not lat/long
-or geodetic coordinate systems). The analysis portion should include
-some combination of spatial and attribute operations to answer a
-relatively straightforward question**
-
-------------------------------------------------------------------------
-
-#### Education & Youth Services
-
-**Option A: Educational Desert Analysis** - **Data:** Schools,
-Libraries, Recreation Centers, Census tracts (child population) -
-**Question:** "Which neighborhoods lack adequate educational
-infrastructure for children?" - **Operations:** Buffer schools/libraries
-(0.5 mile walking distance), identify coverage gaps, overlay with child
-population density - **Policy relevance:** School district planning,
-library placement, after-school program siting
-
-**Option B: School Safety Zones** - **Data:** Schools, Crime Incidents,
-Bike Network - **Question:** "Are school zones safe for walking/biking,
-or are they crime hotspots?" - **Operations:** Buffer schools (1000ft
-safety zone), spatial join with crime incidents, assess bike
-infrastructure coverage - **Policy relevance:** Safe Routes to School
-programs, crossing guard placement
-
-------------------------------------------------------------------------
-
-#### Environmental Justice
-
-**Option C: Green Space Equity** - **Data:** Parks, Street Trees, Census
-tracts (race/income demographics) - **Question:** "Do low-income and
-minority neighborhoods have equitable access to green space?" -
-**Operations:** Buffer parks (10-minute walk = 0.5 mile), calculate tree
-canopy or park acreage per capita, compare by demographics - **Policy
-relevance:** Climate resilience, environmental justice, urban forestry
-investment ---
-
-#### Public Safety & Justice
-
-**Option D: Crime & Community Resources** - **Data:** Crime Incidents,
-Recreation Centers, Libraries, Street Lights - **Question:** "Are
-high-crime areas underserved by community resources?" - **Operations:**
-Aggregate crime counts to census tracts or neighborhoods, count
-community resources per area, spatial correlation analysis - **Policy
-relevance:** Community investment, violence prevention strategies ---
-
 #### Infrastructure & Services
 
 **Option E: Polling Place Accessibility** - **Data:** Polling Places,
@@ -638,44 +594,6 @@ SEPTA stops, Census tracts (elderly population, disability rates) -
 voters?" - **Operations:** Buffer polling places and transit stops,
 identify vulnerable populations, find areas lacking access - **Policy
 relevance:** Voting rights, election infrastructure, ADA compliance
-
-------------------------------------------------------------------------
-
-#### Health & Wellness
-
-**Option F: Recreation & Population Health** - **Data:** Recreation
-Centers, Playgrounds, Parks, Census tracts (demographics) -
-**Question:** "Is lack of recreation access associated with vulnerable
-populations?" - **Operations:** Calculate recreation facilities per
-capita by neighborhood, buffer facilities for walking access, overlay
-with demographic indicators - **Policy relevance:** Public health
-investment, recreation programming, obesity prevention
-
-------------------------------------------------------------------------
-
-#### Emergency Services
-
-**Option G: EMS Response Coverage** - **Data:** Fire Stations, EMS
-stations, Population density, High-rise buildings - **Question:** "Are
-population-dense areas adequately covered by emergency services?" -
-**Operations:** Create service area buffers (5-minute drive = \~2
-miles), assess population coverage, identify gaps in high-density
-areas - **Policy relevance:** Emergency preparedness, station siting
-decisions
-
-------------------------------------------------------------------------
-
-#### Arts & Culture
-
-**Option H: Cultural Asset Distribution** - **Data:** Public Art,
-Museums, Historic sites/markers, Neighborhoods - **Question:** "Do all
-neighborhoods have equitable access to cultural amenities?" -
-**Operations:** Count cultural assets per neighborhood, normalize by
-population, compare distribution across demographic groups - **Policy
-relevance:** Cultural equity, tourism, quality of life, neighborhood
-identity
-
-------------------------------------------------------------------------
 
 ### Data Sources
 
@@ -688,16 +606,6 @@ https://data.pa.gov/ - **Census Bureau (via tidycensus):** Demographics,
 economic indicators, commute patterns - **TIGER/Line (via tigris):**
 Geographic boundaries
 
-### Recommended Starting Points
-
-**If you're feeling confident:** Choose an advanced challenge with
-multiple data layers. **If you are a beginner, choose something more
-manageable that helps you understand the basics**
-
-**If you have a different idea:** Propose your own question! Just make
-sure: - You can access the spatial data - You can perform at least 2
-spatial operations
-
 ### Your Analysis
 
 **Your Task:**
@@ -708,6 +616,9 @@ spatial operations
     -   Provide basic summary statistics
 
 ```{r}
+#| message: false
+#| warning: false
+
 # Load your additional dataset - Option E
 
 # Polling Place Accsessibility - census data
@@ -797,14 +708,7 @@ CRS is it in? Did you need to transform it?
 
 2.  **Pose a research question**
 
-Write a clear research statement that your analysis will answer.
-
-**Examples:** - "Do vulnerable tracts have adequate public transit
-access to hospitals?" - "Are EMS stations appropriately located near
-vulnerable populations?" - "Do areas with low vehicle access have worse
-hospital access?"
-
--   Are polling places accessible for elderly and disabled voters?
+    Are polling places accessible for elderly and disabled voters?
 
 ------------------------------------------------------------------------
 
@@ -819,7 +723,7 @@ unions - Point-in-polygon aggregation
 **Your Task:**
 
 ```{r}
-# Your spatial analysis
+# Spatial analysis
 
 # high interest tracts - those with high shares of vulnerable groups characterized by large populations of elderly and people with disabilties
 
@@ -901,8 +805,8 @@ ggplot() +
 ```
 
 **Analysis requirements:** - Clear code comments explaining each step -
-Appropriate CRS transformations - Summary statistics or counts - At
-least at ur findings - Brief interpretation of results (3-5 sentences)
+Appropriate CRS transformations - Summary statistics or counts - Brief
+interpretation of results (3-5 sentences)
 
 **Your interpretation:**
 
@@ -919,30 +823,3 @@ demonstrates that the vulnerable populations of interest have adequate
 access to polling places. As a result, there may not be an urgent need
 for greater investment in boosting polling place infrastructure for the
 identified populations.
-
-## Finally - A few comments about your incorporation of feedback!
-
-Take a few moments to clean up your markdown document and then write a
-line or two or three about how you may have incorporated feedback that
-you recieved after your first assignment.
-
--   I have avoided using head() or print () directly in my quarto
-    document, and instead use these commands in the console for my own
-    reference.
-
--   I have hidden the setup code using echo = FALSE
-
-------------------------------------------------------------------------
-
-## Submission Requirements
-
-**What to submit:**
-
-1.  **Rendered HTML document posted to your course portfolio** with all
-    code, outputs, maps, and text
-    -   Use `embed-resources: true` in YAML so it's a single file
-    -   All code should run without errors
-    -   All maps and charts should display correctly
-2.  Submit the correct and working links of your assignment on Canvas
-
-------------------------------------------------------------------------

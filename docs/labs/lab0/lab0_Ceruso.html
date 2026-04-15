@@ -205,7 +205,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#basic-summaries" id="toc-basic-summaries" class="nav-link" data-scroll-target="#basic-summaries">5.1 Basic Summaries</a></li>
   <li><a href="#categorical-summaries" id="toc-categorical-summaries" class="nav-link" data-scroll-target="#categorical-summaries">5.2 Categorical Summaries</a></li>
   </ul></li>
-  <li><a href="#submission-notes" id="toc-submission-notes" class="nav-link" data-scroll-target="#submission-notes">Submission Notes</a></li>
   </ul>
 </nav>
 </nav>
@@ -253,13 +252,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Welcome to your first lab! In this (not graded) assignment, you’ll practice the fundamental dplyr operations I overviewed in class using car sales data. This lab will help you get comfortable with:</p>
 <ul>
 <li>Basic data exploration</li>
-<li>Column selection and manipulation<br>
-</li>
+<li>Column selection and manipulation</li>
 <li>Creating new variables</li>
 <li>Filtering data</li>
 <li>Grouping and summarizing</li>
+<li></li>
 </ul>
-<p><strong>Instructions:</strong> Copy this template into your portfolio repository under a <code>lab_0/</code> folder, then complete each section with your code and answers. You will write the code under the comment section in each chunk. Be sure to also copy the data folder into your <code>lab_0</code> folder.</p>
 </section>
 <section id="setup" class="level1">
 <h1>Setup</h1>
@@ -314,7 +312,8 @@ $ Price                 &lt;dbl&gt; 3074, 49704, 24072, 1705, 4101, 29204, 14350
 </div>
 </div>
 <p><strong>Questions to answer:</strong> - How many rows and columns does the dataset have? - What types of variables do you see (numeric, character, etc.)? - Are there any column names that might cause problems? Why?</p>
-<p><strong>Your answers:</strong> - Rows: 50000 - Columns: 7<br>
+<p><strong>Your answers:</strong></p>
+<p>- Rows: 50000 - Columns: 7<br>
 - Variable types: numeric and character variables - Problematic names: “Engine size” or “Fuel type” due to spaces in between words</p>
 </section>
 <section id="tibble-vs-data-frame" class="level2">
@@ -28927,7 +28926,6 @@ $ Price                 &lt;dbl&gt; 3074, 49704, 24072, 1705, 4101, 29204, 14350
 <h1>Exercise 2: Basic Column Operations</h1>
 <section id="selecting-columns" class="level2">
 <h2 class="anchored" data-anchor-id="selecting-columns">2.1 Selecting Columns</h2>
-<p>Practice selecting different combinations of columns:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select just Model and Mileage columns</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">select</span>(car_data, Model, Mileage)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -28989,7 +28987,6 @@ $ Price                 &lt;dbl&gt; 3074, 49704, 24072, 1705, 4101, 29204, 14350
 </section>
 <section id="renaming-columns" class="level2">
 <h2 class="anchored" data-anchor-id="renaming-columns">2.2 Renaming Columns</h2>
-<p>Let’s fix a problematic column name:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Rename 'Year of manufacture' to year</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rename</span>(car_data, <span class="at">year =</span> <span class="st">'Year of manufacture'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -29020,7 +29017,7 @@ $ Price                 &lt;dbl&gt; 3074, 49704, 24072, 1705, 4101, 29204, 14350
 </div>
 </div>
 <p><strong>Question:</strong> Why did we need backticks around <code>Year of manufacture</code> but not around <code>year</code>?</p>
-<p><strong>Your answer:</strong> Because there were spaces between each word.</p>
+<p><strong>Your answer:</strong> Due to the spaces between each word.</p>
 </section>
 </section>
 <section id="exercise-3-creating-new-columns" class="level1">
@@ -29300,14 +29297,9 @@ $ Price                 &lt;dbl&gt; 3074, 49704, 24072, 1705, 4101, 29204, 14350
 3 Midrange        9782</code></pre>
 </div>
 </div>
-</section>
-</section>
-<section id="submission-notes" class="level1">
-<h1>Submission Notes</h1>
-<p><strong>To submit this lab:</strong> 1. Make sure your code runs without errors 2. Fill in all the “[YOUR ANSWER]” sections and complete all of the empty code! 3. Save this file in your portfolio’s <code>lab_0/</code> folder 4. Commit and push to GitHub 5. Check that it appears on your GitHub Pages portfolio site</p>
-<p><strong>Questions?</strong> Post on the canvas discussion board or come to office hours!</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

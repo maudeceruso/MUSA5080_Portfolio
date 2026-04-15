@@ -52,7 +52,9 @@ library(knitr)
 
 # Set your Census API key
 census_api_key("c61294d533815353a666f356be78c2a75d0b1f00")
+```
 
+```{r}
 # Choose your state for analysis - assign it to a variable called my_state
 my_state <- "New York"
 ```

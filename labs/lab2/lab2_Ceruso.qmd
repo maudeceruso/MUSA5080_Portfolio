@@ -67,6 +67,7 @@ setwd(dir = "/Users/maudeceruso/Documents/GitHub/MUSA5080_Portfolio")
 ```{r}
 #| message: false
 #| warning: false
+#| output: false
 
 # Load spatial data
 pa_counties <- st_read("data/Pennsylvania_County_Boundaries (1)/Pennsylvania_County_Boundaries.shp")
@@ -83,16 +84,6 @@ census_tracts <- tracts(state = "PA", cb = TRUE)
 census_tracts <- census_tracts %>%
   st_transform(st_crs(pa_counties))
 
-```
-
-```{r}
-#| message: false
-#| warning: false
-
-# Check that all data loaded correctly
-glimpse(pa_counties)
-st_crs(pa_counties)
-st_geometry(pa_counties)
 ```
 
 ```{r}
@@ -618,6 +609,7 @@ Geographic boundaries
 ```{r}
 #| message: false
 #| warning: false
+#| 
 
 # Load your additional dataset - Option E
 

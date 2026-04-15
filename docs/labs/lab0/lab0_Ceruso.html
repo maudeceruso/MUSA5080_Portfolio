@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -11,6 +11,9 @@
 
 <title>Lab 0: Getting Started with dplyr – Maude Ceruso - MUSA 5080 Portfolio</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -69,15 +72,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="../../">
 <script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -179,27 +181,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
   <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
   <li><a href="#exercise-1-getting-to-know-your-data" id="toc-exercise-1-getting-to-know-your-data" class="nav-link" data-scroll-target="#exercise-1-getting-to-know-your-data">Exercise 1: Getting to Know Your Data</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#data-structure-exploration" id="toc-data-structure-exploration" class="nav-link" data-scroll-target="#data-structure-exploration">1.1 Data Structure Exploration</a></li>
   <li><a href="#tibble-vs-data-frame" id="toc-tibble-vs-data-frame" class="nav-link" data-scroll-target="#tibble-vs-data-frame">1.2 Tibble vs Data Frame</a></li>
   </ul></li>
   <li><a href="#exercise-2-basic-column-operations" id="toc-exercise-2-basic-column-operations" class="nav-link" data-scroll-target="#exercise-2-basic-column-operations">Exercise 2: Basic Column Operations</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#selecting-columns" id="toc-selecting-columns" class="nav-link" data-scroll-target="#selecting-columns">2.1 Selecting Columns</a></li>
   <li><a href="#renaming-columns" id="toc-renaming-columns" class="nav-link" data-scroll-target="#renaming-columns">2.2 Renaming Columns</a></li>
   </ul></li>
   <li><a href="#exercise-3-creating-new-columns" id="toc-exercise-3-creating-new-columns" class="nav-link" data-scroll-target="#exercise-3-creating-new-columns">Exercise 3: Creating New Columns</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#calculate-car-age" id="toc-calculate-car-age" class="nav-link" data-scroll-target="#calculate-car-age">3.1 Calculate Car Age</a></li>
   <li><a href="#categorize-cars" id="toc-categorize-cars" class="nav-link" data-scroll-target="#categorize-cars">3.2 Categorize Cars</a></li>
   </ul></li>
   <li><a href="#exercise-4-filtering-practice" id="toc-exercise-4-filtering-practice" class="nav-link" data-scroll-target="#exercise-4-filtering-practice">Exercise 4: Filtering Practice</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#basic-filtering" id="toc-basic-filtering" class="nav-link" data-scroll-target="#basic-filtering">4.1 Basic Filtering</a></li>
   <li><a href="#multiple-conditions" id="toc-multiple-conditions" class="nav-link" data-scroll-target="#multiple-conditions">4.2 Multiple Conditions</a></li>
   </ul></li>
   <li><a href="#exercise-5-grouping-and-summarizing" id="toc-exercise-5-grouping-and-summarizing" class="nav-link" data-scroll-target="#exercise-5-grouping-and-summarizing">Exercise 5: Grouping and Summarizing</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#basic-summaries" id="toc-basic-summaries" class="nav-link" data-scroll-target="#basic-summaries">5.1 Basic Summaries</a></li>
   <li><a href="#categorical-summaries" id="toc-categorical-summaries" class="nav-link" data-scroll-target="#categorical-summaries">5.2 Categorical Summaries</a></li>
   </ul></li>

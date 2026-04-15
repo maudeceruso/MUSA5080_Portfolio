@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -11,6 +11,9 @@
 
 <title>Lab 1: Census Data Quality for Policy Decisions – Maude Ceruso - MUSA 5080 Portfolio</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -69,15 +72,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="../../">
 <script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-5b4ad623e5705c0698d39aec6f10cf02.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-158031087360bce0ff56dc785ce39e06.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -177,36 +179,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#assignment-overview" id="toc-assignment-overview" class="nav-link active" data-scroll-target="#assignment-overview">Assignment Overview</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#scenario" id="toc-scenario" class="nav-link" data-scroll-target="#scenario">Scenario</a></li>
   <li><a href="#learning-objectives" id="toc-learning-objectives" class="nav-link" data-scroll-target="#learning-objectives">Learning Objectives</a></li>
   </ul></li>
   <li><a href="#part-1-setup" id="toc-part-1-setup" class="nav-link" data-scroll-target="#part-1-setup">Part 1: Setup</a></li>
   <li><a href="#part-2-county-level-resource-assessment" id="toc-part-2-county-level-resource-assessment" class="nav-link" data-scroll-target="#part-2-county-level-resource-assessment">Part 2: County-Level Resource Assessment</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#data-retrieval" id="toc-data-retrieval" class="nav-link" data-scroll-target="#data-retrieval">2.1 Data Retrieval</a></li>
   <li><a href="#data-quality-assessment" id="toc-data-quality-assessment" class="nav-link" data-scroll-target="#data-quality-assessment">2.2 Data Quality Assessment</a></li>
   <li><a href="#high-uncertainty-counties" id="toc-high-uncertainty-counties" class="nav-link" data-scroll-target="#high-uncertainty-counties">2.3 High Uncertainty Counties</a></li>
   </ul></li>
   <li><a href="#part-3-neighborhood-level-analysis" id="toc-part-3-neighborhood-level-analysis" class="nav-link" data-scroll-target="#part-3-neighborhood-level-analysis">Part 3: Neighborhood-Level Analysis</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#focus-area-selection" id="toc-focus-area-selection" class="nav-link" data-scroll-target="#focus-area-selection">3.1 Focus Area Selection</a></li>
   <li><a href="#tract-level-demographics" id="toc-tract-level-demographics" class="nav-link" data-scroll-target="#tract-level-demographics">3.2 Tract-Level Demographics</a></li>
   <li><a href="#demographic-analysis" id="toc-demographic-analysis" class="nav-link" data-scroll-target="#demographic-analysis">3.3 Demographic Analysis</a></li>
   </ul></li>
   <li><a href="#part-4-comprehensive-data-quality-evaluation" id="toc-part-4-comprehensive-data-quality-evaluation" class="nav-link" data-scroll-target="#part-4-comprehensive-data-quality-evaluation">Part 4: Comprehensive Data Quality Evaluation</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#moe-analysis-for-demographic-variables" id="toc-moe-analysis-for-demographic-variables" class="nav-link" data-scroll-target="#moe-analysis-for-demographic-variables">4.1 MOE Analysis for Demographic Variables</a></li>
   <li><a href="#pattern-analysis" id="toc-pattern-analysis" class="nav-link" data-scroll-target="#pattern-analysis">4.2 Pattern Analysis</a></li>
   </ul></li>
   <li><a href="#part-5-policy-recommendations" id="toc-part-5-policy-recommendations" class="nav-link" data-scroll-target="#part-5-policy-recommendations">Part 5: Policy Recommendations</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#analysis-integration-and-professional-summary" id="toc-analysis-integration-and-professional-summary" class="nav-link" data-scroll-target="#analysis-integration-and-professional-summary">5.1 Analysis Integration and Professional Summary</a></li>
   <li><a href="#specific-recommendations" id="toc-specific-recommendations" class="nav-link" data-scroll-target="#specific-recommendations">6.3 Specific Recommendations</a></li>
   <li><a href="#questions-for-further-investigation" id="toc-questions-for-further-investigation" class="nav-link" data-scroll-target="#questions-for-further-investigation">Questions for Further Investigation</a></li>
   </ul></li>
   <li><a href="#technical-notes" id="toc-technical-notes" class="nav-link" data-scroll-target="#technical-notes">Technical Notes</a>
-  <ul class="collapse">
+  <ul>
   <li><a href="#submission-checklist" id="toc-submission-checklist" class="nav-link" data-scroll-target="#submission-checklist">Submission Checklist</a></li>
   </ul></li>
   </ul>

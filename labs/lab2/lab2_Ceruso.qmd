@@ -609,7 +609,7 @@ Geographic boundaries
 ```{r}
 #| message: false
 #| warning: false
-#| 
+#| output: false
 
 # Load your additional dataset - Option E
 

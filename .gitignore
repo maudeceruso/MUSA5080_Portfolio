@@ -41,3 +41,5 @@ Thumbs.db
 *~
 /.quarto/
 **/*.quarto_ipynb
+.RDataTmp
+.RDataTmp1

@@ -22,7 +22,7 @@ website:
             text: "Lab 3: Midterm Appendix"
           - href: labs/lab4/lab_4.qmd
             text: "Lab 4: Spatial Predictive Analysis"
-          - href: labs/lab5/lab5_Ceruso.qmd
+          - href: labs/lab5/lab5.qmd
             text: "Lab 5: Space-Time Prediction"
 format:
   html:

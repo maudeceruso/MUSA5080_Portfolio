@@ -1,7 +1,7 @@
 ---
 title: "Bikeshare Space-Time Prediction"
 subtitle: "CPLN 5080 - Spring 2026"
-author: "Your Name"
+author: "Maude Ceruso"
 date: today
 format:
   html:
@@ -190,8 +190,6 @@ ggplot(daily_trips, aes(x = date, y = trips)) +
   ) +
   plotTheme
 ```
-
-**Question:** What patterns do you see? How does ridership change over time?
 
 Exploring the bike trip data further, we notice a big spike in the number of trips in February. This spike likely aligns with the festivities associated with the Eagles Super Bowl Championship celebration across the city which occurred on Friday, the 14th of February.
 
@@ -1999,9 +1997,6 @@ Q4's Model 2 produces the greatest prediction errors mostly on weekdays, except 
     (p1 | p2) / (p3 | plot_spacer())
     ```
 
--   Are certain communities systematically harder to predict? Yes
--   What are the equity implications? ??
-
 ## Part 3: Feature Engineering & model improvement
 
 Add 2-3 NEW features to improve the model: UPenn School Sessions, Daylight hours (sunrise/sunset), Wind Chill levels, and the Distance to center city
@@ -2087,7 +2082,7 @@ study_panel_completeq4 <- study_panel_completeq4 %>%
 
 # Create distance to center city feature
 # load center city boundary 
-center_city <- st_read("data/center_city_boundary.geojson")
+center_city <- st_read(here::here("CC_boundary.geojson"))
 
 # transforming to appropriate CRS
 center_city <- st_transform(center_city, 3365)

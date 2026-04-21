@@ -13,9 +13,7 @@ data_unclean/
 # =========================
 # R
 # =========================
-.Rhistory
 .RData
-.Ruserdata
 .Rproj.user/
 *.Rproj
 

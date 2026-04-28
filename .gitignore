@@ -16,6 +16,11 @@ data_unclean/
 .RData
 .Rproj.user/
 *.Rproj
+.RDataTmp3
+data.zip
+data/opa_properties_public.csv
+data/opa_properties_public.geojson
+data/phil_properties.csv
 
 # Renviron / local secrets
 .Renviron

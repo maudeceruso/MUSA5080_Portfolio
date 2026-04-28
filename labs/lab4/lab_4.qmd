@@ -389,7 +389,7 @@ calculate_local_morans <- function(data, variable, k = 5) {
     )
 }
 
-# Apply to abandoned cars
+# Apply to vacant buildings
 fishnet <- calculate_local_morans(fishnet, "vacant_bldg", k = 5)
 ```
 

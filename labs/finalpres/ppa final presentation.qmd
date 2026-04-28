@@ -17,6 +17,12 @@ execute:
   message: false
 ---
 
+```{r}
+#|echo: false
+#|eval: false
+library(knitr)
+```
+
 ## The Problem {background-color="#F5F0E8"}
 
 -   Adequately collecting property taxes has been a big issue for the City of Philadelphia
@@ -95,14 +101,21 @@ Which properties, not delinquent in 2019, will become delinquent in 2020?
 
 ## Data Sources {background-color="#F5F0E8"}
 
-| Source | Outcomes Created for Model |
-|----|----|
-| City of Philadelphia Real Estate Tax Delinquency | Delinquency outcome (2010 to 2020) |
-| OPA Property Characteristics | Market value, livable area, year built |
-| ACS 2019 (Block Group) | Income, owner rate, age 65+, poverty |
-| ACS 2019 (Census Tract) | Unemployment, owner cost burden |
-| OpenDataPhilly | BIDs, empowerment zones, HCA distance |
-| Philadelphia Crime Data | Burglary hotspot distance |
++--------------------------------------------------+----------------------------------------+
+| Source                                           | Outcomes Created for Model             |
++==================================================+========================================+
+| City of Philadelphia Real Estate Tax Delinquency | Delinquency outcome (2010 to 2020)     |
++--------------------------------------------------+----------------------------------------+
+| OPA Property Characteristics                     | Market value, livable area, year built |
++--------------------------------------------------+----------------------------------------+
+| ACS 2019 (Block Group)                           | Income, owner rate, age 65+, poverty   |
++--------------------------------------------------+----------------------------------------+
+| ACS 2019 (Census Tract)                          | Unemployment, owner cost burden        |
++--------------------------------------------------+----------------------------------------+
+| OpenDataPhilly                                   | BIDs, empowerment zones, HCA distance  |
++--------------------------------------------------+----------------------------------------+
+| Philadelphia Crime Data                          | Burglary hotspot distance              |
++--------------------------------------------------+----------------------------------------+
 
 ------------------------------------------------------------------------
 
@@ -136,9 +149,9 @@ Which properties, not delinquent in 2019, will become delinquent in 2020?
 -   Test on 2020
 -   Only test on properties **not delinquent in 2019** (lag_delinquent == 0)
 
-|     |
-|:----|
-|     |
++:----------------------------------------------------------------------+
+|                                                                       |
++-----------------------------------------------------------------------+
 
 ## Challenge: Class Imbalance {background-color="#F5F0E8"}
 
@@ -184,21 +197,27 @@ A model that predicts "not delinquent" for everyone gets 99% accuracy, which ass
 
 ## EDA: Where is Delinquency? {background-color="#F5F0E8"}
 
-![](images/clipboard-1443021382.png)
+```{r}
+knitr::include_graphics("hereisdelinq.png")
+```
 
 ------------------------------------------------------------------------
 
-![](images/clipboard-3567610765.png)
+```{r}
+knitr::include_graphics("barchart.png")
+```
 
 ------------------------------------------------------------------------
 
-![](images/clipboard-3891627836.png)
+```{r}
+knitr::include_graphics("logmedianincome.png")
+```
 
 ------------------------------------------------------------------------
 
-## EDA: Delinquency Rate Over Time {background-color="#F5F0E8"}
-
-![](images/clipboard-676581362.png)
+```{r}
+knitr::include_graphics("delinqspatial.png")
+```
 
 ------------------------------------------------------------------------
 
@@ -206,28 +225,27 @@ A model that predicts "not delinquent" for everyone gets 99% accuracy, which ass
 
 **Undersampling + Class Weights + Neighborhood Fixed Effects**
 
-| Metric      | Value | What it means                                          |
-|-------------|-------|--------------------------------------------------------|
-| Sensitivity | 0.797 | Caught \~80% of properties that became delinquent      |
-| Specificity | 0.493 | Correctly categorized 49% of non-delinquent properties |
-| Precision   | 0.011 | 1.1% of flagged properties were truly delinquent       |
-| AUC         | 0.706 | considered acceptable model performance                |
++-------------+------------+--------------------------------------------------------+
+| Metric      | Value      | What it means                                          |
++=============+============+========================================================+
+| Sensitivity | 0.797      | Caught \~80% of properties that became delinquent      |
++-------------+------------+--------------------------------------------------------+
+| Specificity | 0.493      | Correctly categorized 49% of non-delinquent properties |
++-------------+------------+--------------------------------------------------------+
+| Precision   | 0.011      | 1.1% of flagged properties were truly delinquent       |
++-------------+------------+--------------------------------------------------------+
+| AUC         | 0.706      | considered acceptable model performance                |
++-------------+------------+--------------------------------------------------------+
 
 ------------------------------------------------------------------------
 
-## Model 8: Block Group Income Quartile {background-color="#F5F0E8"}
+## Model 8: Equity Analysis {background-color="#F5F0E8"}
 
-![](images/clipboard-2934847184.png)
+```{r}
+knitr::include_graphics("midhighincome.png")
+```
 
-The model successfully **ranks** risk even if precision is low.
-
-------------------------------------------------------------------------
-
-## Equity Analysis {background-color="#F5F0E8"}
-
-![](images/clipboard-2621786471.png)
-
-The model performs most equitably in **mid-high income neighborhoods**
+The model performs slightly better in **mid-high income neighborhoods**
 
 ------------------------------------------------------------------------
 

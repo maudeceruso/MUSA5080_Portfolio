@@ -12,51 +12,125 @@ execute:
 
 ## The Problem
 
--   Property tax delinquency affects city revenue\
--   It can signal financial stress for households\
--   The city cannot intervene everywhere\
--   The goal is to identify which properties may need early outreach
+-   Adequately collecting property taxes has been a big issue for the City of Philadelphia\
+
+-   Property tax delinquency directly affects city revenue\
+
+    -   55% goes to the School District of Philadelphia
+    -   45% goes to the City of Philadelphia General Fund
 
 ------------------------------------------------------------------------
 
-## Policy Question
+## Tax Delinquency in Philadelphia
 
-Which properties should the city prioritize for outreach?
+-   As of fiscal year 2024, the city was owed nearly \$197 million\
+    across more than 54,000 parcels (including residential and commercial)
 
--   Payment plans\
--   Housing counseling\
--   Early intervention
+------------------------------------------------------------------------
+
+## Equity Considerations:
+
+Disproportionately Impacted Groups
+
+-   Low-income Households\
+-   Elderly\
+-   Disabled\
+-   Residents in gentrifying areas
+
+------------------------------------------------------------------------
+
+## High Repercussions
+
+Tax delinquency debt can accumulate rapidly with added interest
+
+**\~1.4%** - property tax rate of assessed market value
+
+**1.5%** - monthly interest
+
+**15%** - penalty applied for delinquency status
+
+------------------------------------------------------------------------
+
+## Goal
+
+To identify which properties may need early outreach before entering tax delinquent status
+
+-   Payment plans
+
+-   Housing counseling
+
+-   Location-based Information Dissemination
+
+------------------------------------------------------------------------
+
+## Research Question
+
+Which properties, not delinquent in 2019, will become delinquent in 2020?
+
+-   2020 being a significant year for the economy directly linked to the global COVID-19 pandemic.
+
+-   Predicting delinquency for non-delinquent properties in 2019 controls for properties that were already struggling, isolating the effect of start of the pandemic in 2020
+
+------------------------------------------------------------------------
+
+## Significance
+
+-   By identifying the homes which were at risk of delinquency during periods of economic instability, the model may be useful to the City of Philadelphia as a reference tool to offer an idea of the properties and, in turn, areas that may be hardest hit during future times of economic hardship.
+
+------------------------------------------------------------------------
+
+# Methods
+
+------------------------------------------------------------------------
+
+## A Logistic Regression Model
+
+-   Outcome variable is binary: is/is not delinquent
 
 ------------------------------------------------------------------------
 
 ## Data
 
--   Property tax delinquency data\
--   Property characteristics from OPA\
--   Census demographic data\
+-   Property tax delinquency data
+-   Property characteristics from OPA
+-   Census demographic data
 -   Spatial features
 
 ------------------------------------------------------------------------
 
-## What We Predict
+## Data Variables
 
--   Binary outcome\
--   Delinquent or not delinquent
+**lag_delinquent** → Whether the property was delinquent last year\
+**times_delinquent_before** → Number of past delinquency years\
+**log_marketvalue** → Property value (logged)\
+**year_built** → Age of the property\
+**log_medhhince** → Median household income (logged)\
+**own_burden_rate** → Share of owners spending a high % of income on housing\
+**log_over65** → % of population over 65 (logged)\
+**log_pov_rate** → Poverty rate (logged)\
+**in_bid** → Located in a Business Improvement District\
+**log_disthca** → Distance to housing counseling services (logged)\
+**log_disthotcrime** → Distance to burglary hotspots (logged)\
+**in_emp** → Located in an Empowerment Zone\
+**in_aff_buf** → Near affordable housing Name → Neighborhood fixed effect
+
+------------------------------------------------------------------------
+
+**Initial Exploration**
+
+![](images/clipboard-923919364.png)
 
 ------------------------------------------------------------------------
 
 ## Key Insight from EDA
 
--   Delinquency is extremely rare\
+-   Delinquency is extremely rare
 -   Most properties are not delinquent
-
-**This is a rare event prediction problem**
-
-------------------------------------------------------------------------
+-   **This is a rare event prediction problem**
 
 ## TO DO
 
-Need to insert visualization/table of deliquency rate (table we made with `final_model_df %>% count(delinquent)`)
+Need to insert visualization/table of delinquency rate (table we made with `final_model_df %>% count(delinquent)`)
 
 ------------------------------------------------------------------------
 

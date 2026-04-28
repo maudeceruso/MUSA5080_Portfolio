@@ -26,8 +26,8 @@ website:
             text: "Lab 5: Space-Time Prediction"
           - href: labs/lab6/Model9_April_27_PPA.qmd
             text: "Lab 6: Final Challenge"
-          - href: labs/lab6/tax_delinquency_presentation (1).qmd
-            text: "Lab 6: Final Challenge Presentation"
+          - href: labs/finalpres/ppa final presentation.qmd
+            text: "Final: Presentation"
 format:
   html:
     theme: cosmo

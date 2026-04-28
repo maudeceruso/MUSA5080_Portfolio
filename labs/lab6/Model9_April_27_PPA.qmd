@@ -1,6 +1,8 @@
 ---
 title: "Final Technical Appendix"
 editor: visual
+execute: 
+  eval: false
 ---
 
 # Predicting Philadelphia Property Tax Delinquency
@@ -10,22 +12,6 @@ editor: visual
 ```{r setup-libraries}
 #| message: false
 #| warning: false
-
-install.packages(c(
-  "tidyverse",
-  "lubridate",
-  "sf",
-  "tigris",
-  "tidycensus",
-  "viridis",
-  "knitr",
-  "kableExtra",
-  "patchwork",
-  "modelsummary",
-  "scales",
-  "here",
-  "janitor"
-))
 
 library(tidyverse)
 library(lubridate)
@@ -178,16 +164,16 @@ opa_sf <- st_transform(opa_sf, st_crs(PHL_LIMITS))
 ggplot() +
   geom_sf(data = PHL_LIMITS, fill = "white", color = "gray60") +
   geom_sf(
-    data = prop_tax_sf,
-    color = "lightpink",
-    size = 0.025,
+    data = opa_sf,
+    color = "black", 
+    size = 0.0025,
     alpha = 0.6
   ) +
   geom_sf(
-    data = opa_sf,
-    color = "black", 
-    size = 0.025,
-    alpha = 0.6
+    data = prop_tax_sf,
+    color = "lightpink",
+    size = 0.0000025,
+    alpha = 0.06
   ) +
   theme_void()
 ```
@@ -1131,7 +1117,7 @@ ggplot() +
   theme_void()
 ```
 
-## Creating Local Moran's on Crime Fishnet
+## Creating Local Moran's I on Crime Fishnet
 
 ```{r}
 library(spdep)
@@ -1265,7 +1251,7 @@ ggplot() +
 # renaming final_data_panel
 model_df <- final_data_panel
 
-model_df %>% group_by(year) %>% 
+delinq_overtime <- model_df %>% group_by(year) %>% 
   summarise(new_delinquency_rate = mean(delinquent)) %>% 
   ggplot(aes(x = year, y = new_delinquency_rate)) +
   geom_line(size = 1.2, color = "#1B2A4A") +
@@ -1274,6 +1260,8 @@ model_df %>% group_by(year) %>%
   labs(title = "Annual New Delinquency Rate Among Previously-Current Properties",
        subtitle = "Dashed line = 2020 (COVID year)",
        x = "Year", y = "New Delinquency Rate")
+
+delinq_overtime
 ```
 
 ### Dot map of all properties delinquent and non delinquent by year
@@ -1366,7 +1354,7 @@ knitr::include_graphics("combined_delinq.png")
 ### Histogram of delinquent properties by year.
 
 ```{r}
-ggplot(data = final_data_panel %>% filter(delinquent == 1),
+ ggplot(data = final_data_panel %>% filter(delinquent == 1),
        aes(x = factor(year))) +
   geom_bar(fill = "darkblue", color = "white") +
   labs(
@@ -1526,7 +1514,7 @@ knitr::include_graphics("combined_delinq1.png")
 ```{r}
 
 # Simple count
-final_data_panel %>%
+unbalanced_tbl <- final_data_panel %>%
   st_drop_geometry() %>%
   count(delinquent) %>%
   mutate(pct = n / sum(n) * 100)
@@ -1690,7 +1678,7 @@ model_df <- model_df %>%
   )
 
 
-model_df %>%
+logcensus_eda <- model_df %>%
   distinct(GEOID, .keep_all = TRUE) %>%
   select(log_medhhince, log_over65, log_pov_rate) %>%
   st_drop_geometry() %>% 
@@ -1786,7 +1774,7 @@ model_df %>%
 ```{r}
 
 # Binary spatial features
-final_data_panel %>%
+binaryspatial_bar <- final_data_panel %>%
   st_drop_geometry() %>%
   select(delinquent, in_bid, in_aff_buf, in_emp) %>%
   pivot_longer(-delinquent, names_to = "feature", values_to = "value") %>%
@@ -1808,12 +1796,8 @@ final_data_panel %>%
   theme_minimal() +
   theme(legend.position = "none")
 
-
+binaryspatial_bar
 ```
-
-### Binary: Government Demo or Republic
-
-### ----
 
 ## Prepare final model dataframe
 
@@ -2091,29 +2075,28 @@ ggplot(test_data, aes(x = predicted_prob, fill = as.factor(delinquent))) +
 Note: We evaluated different weights and thresholds. For example, with an inverse weight and .15 threshold, we produced fewer false positives, with higher precision and lower recall. This was considered conservative because we essentially were minimizing how many incorrectly labeling non-delinquent homes. When we lower the probability of a property being delinquent to .03 there are more flagged properties and higher recall, but there is also a trade-off of lower precision.
 
 ```{r}
-install.packages("caret")
 library(caret)
 
 test_data <- test_data %>% 
-  mutate(predicted_class_50 = ifelse(predicted_prob > 0.03, 1, 0)) # if predicted probability>0.03, marked as 1 (delinquent)
+  mutate(predicted_class_03 = ifelse(predicted_prob > 0.03, 1, 0)) # if predicted probability>0.03, marked as 1 (delinquent)
 
-cm_50 <- confusionMatrix(
-  as.factor(test_data$predicted_class_50), # predicted delinquency
+cm_03 <- confusionMatrix(
+  as.factor(test_data$predicted_class_03), # predicted delinquency
   as.factor(test_data$delinquent), # actual delinquency
   positive = "1" # telling confusion matrix what the "positive" outcome is
 )
 
-print(cm_50)
+print(cm_03)
 
 # Pull out the key metrics explicitly
-cat("\nKey Metrics at Threshold = 0.50:\n")
-cat("Sensitivity:", round(cm_50$byClass["Sensitivity"], 3),
+cat("\nKey Metrics at Threshold = 0.03:\n")
+cat("Sensitivity:", round(cm_03$byClass["Sensitivity"], 3),
     "— of all properties that became delinquent, how many did we catch?\n")
-cat("Specificity:", round(cm_50$byClass["Specificity"], 3),
+cat("Specificity:", round(cm_03$byClass["Specificity"], 3),
     "— of all properties that stayed current, how many did we correctly spare?\n")
-cat("Precision:", round(cm_50$byClass["Precision"], 3),
+cat("Precision:", round(cm_03$byClass["Precision"], 3),
     "— of properties we flagged, how many actually became delinquent?\n")
-cat("Accuracy:", round(cm_50$overall["Accuracy"], 3), "\n")
+cat("Accuracy:", round(cm_03$overall["Accuracy"], 3), "\n")
 
 
 
@@ -2122,6 +2105,40 @@ train_data %>%
   group_by(delinquent) %>% 
   summarise(n = n(), unique_properties = n_distinct(opa_number))
 
+```
+
+```{r}
+
+cm_table_m7 <- as.data.frame(cm_03$table)
+
+colnames(cm_table_m7) <- c("Predicted", "Actual", "Count")
+
+cm_table_m7
+
+cm_metrics_m7 <- tibble(
+  Metric = c(
+    "Accuracy",
+    "Sensitivity (Recall)",
+    "Specificity",
+    "Precision"
+  ),
+  Value = c(
+    round(as.numeric(cm_03$overall["Accuracy"]), 3),
+    round(as.numeric(cm_03$byClass["Sensitivity"]), 3),
+    round(as.numeric(cm_03$byClass["Specificity"]), 3),
+    round(as.numeric(cm_03$byClass["Precision"]), 3)
+  )
+)
+
+cm_metrics_m7
+
+cm_metrics_m7 %>%
+  kable(caption = "Model Performance (Threshold = 0.03)") %>%
+  kable_styling(full_width = FALSE)
+
+library(gridExtra)
+library(grid)
+library(tibble)   # for tibble::tibble()
 
 
 ```
@@ -2198,20 +2215,47 @@ ggplot(test_data_clean, aes(x = predicted_prob2, fill = as.factor(delinquent))) 
 ### Model 6: Confusion Matrix
 
 ```{r}
-
-```
-
-```{r}
 test_data_clean <- test_data_clean %>% 
-  mutate(predicted_class_50 = ifelse(predicted_prob2 > 0.15,1, 0)) # if predicted probability>0.50, marked as 1 (delinquent)
+  mutate(predicted_class_15 = ifelse(predicted_prob2 > 0.15,1, 0)) # if predicted probability>0.15, marked as 1 (delinquent)
 
-cm_50_clean <- confusionMatrix(
-  as.factor(test_data_clean$predicted_class_50), # predicted delinquency
+cm_15_clean <- confusionMatrix(
+  as.factor(test_data_clean$predicted_class_15), # predicted delinquency
   as.factor(test_data_clean$delinquent), # actual delinquency
   positive = "1" # telling confusion matrix what the "positive" outcome is
 )
 
-print(cm_50_clean)
+print(cm_15_clean)
+```
+
+```{r}
+cm_table_m6 <- as.data.frame(cm_15_clean$table)
+
+colnames(cm_table_m6) <- c("Predicted", "Actual", "Count")
+
+cm_table_m6
+
+cm_metrics_m6 <- tibble(
+  Metric = c(
+    "Accuracy",
+    "Sensitivity (Recall)",
+    "Specificity",
+    "Precision"
+  ),
+  Value = c(
+    round(as.numeric(cm_15_clean$overall["Accuracy"]), 3),
+    round(as.numeric(cm_15_clean$byClass["Sensitivity"]), 3),
+    round(as.numeric(cm_15_clean$byClass["Specificity"]), 3),
+    round(as.numeric(cm_15_clean$byClass["Precision"]), 3)
+  )
+)
+
+cm_metrics_m6
+
+cm_metrics_m6 %>%
+  kable(caption = "Model Performance (Threshold = 0.15)") %>%
+  kable_styling(full_width = FALSE)
+
+
 ```
 
 ## Model 8: Balanced Re-sampling AND class-weights
@@ -2268,6 +2312,7 @@ logit_model8 <- glm(
 
 AIC8 <- AIC(logit_model8)
 summary(logit_model8)
+
 ```
 
 ### Model 8: Predicted Probabilities
@@ -2302,24 +2347,54 @@ ggplot(test_data, aes(x = predicted_prob, fill = as.factor(delinquent))) +
 
 # Model 8: Confusion Matrix
 test_data <- test_data %>% 
-  mutate(predicted_class_50 = ifelse(predicted_prob > 0.15, 1, 0))
+  mutate(predicted_class_15 = ifelse(predicted_prob > 0.15, 1, 0))
 
-cm_50 <- confusionMatrix(
-  as.factor(test_data$predicted_class_50),
+cm_15 <- confusionMatrix(
+  as.factor(test_data$predicted_class_15),
   as.factor(test_data$delinquent),
   positive = "1"
 )
 
-print(cm_50)
+print(cm_15)
 
 cat("\nKey Metrics at Threshold = 0.15:\n")
-cat("Sensitivity:", round(cm_50$byClass["Sensitivity"], 3),
+cat("Sensitivity:", round(cm_15$byClass["Sensitivity"], 3),
     "— of all properties that became delinquent, how many did we catch?\n")
-cat("Specificity:", round(cm_50$byClass["Specificity"], 3),
+cat("Specificity:", round(cm_15$byClass["Specificity"], 3),
     "— of all properties that stayed current, how many did we correctly spare?\n")
-cat("Precision:", round(cm_50$byClass["Precision"], 3),
+cat("Precision:", round(cm_15$byClass["Precision"], 3),
     "— of properties we flagged, how many actually became delinquent?\n")
-cat("Accuracy:", round(cm_50$overall["Accuracy"], 3), "\n")
+cat("Accuracy:", round(cm_15$overall["Accuracy"], 3), "\n")
+
+```
+
+```{r}
+cm_table <- as.data.frame(cm_15$table)
+
+colnames(cm_table) <- c("Predicted", "Actual", "Count")
+
+cm_table
+
+cm_metrics <- tibble(
+  Metric = c(
+    "Accuracy",
+    "Sensitivity (Recall)",
+    "Specificity",
+    "Precision"
+  ),
+  Value = c(
+    round(as.numeric(cm_15$overall["Accuracy"]), 3),
+    round(as.numeric(cm_15$byClass["Sensitivity"]), 3),
+    round(as.numeric(cm_15$byClass["Specificity"]), 3),
+    round(as.numeric(cm_15$byClass["Precision"]), 3)
+  )
+)
+
+cm_metrics
+
+cm_metrics %>%
+  kable(caption = "Model Performance (Threshold = 0.15)") %>%
+  kable_styling(full_width = FALSE)
 
 
 ```
@@ -2513,11 +2588,11 @@ overall_metrics <- test_data_m8 %>%
     Group = "Overall",
     N = n(),
     Base_Rate = mean(delinquent),
-    Sensitivity = sum(predicted_class_50 == 1 & delinquent == 1) / sum(delinquent == 1),
-    Specificity = sum(predicted_class_50 == 0 & delinquent == 0) / sum(delinquent == 0),
-    Precision = sum(predicted_class_50 == 1 & delinquent == 1) / sum(predicted_class_50 == 1),
-    FPR = sum(predicted_class_50 == 1 & delinquent == 0) / sum(delinquent == 0),
-    FNR = sum(predicted_class_50 == 0 & delinquent == 1) / sum(delinquent == 1)
+    Sensitivity = sum(predicted_class_15 == 1 & delinquent == 1) / sum(delinquent == 1),
+    Specificity = sum(predicted_class_15 == 0 & delinquent == 0) / sum(delinquent == 0),
+    Precision = sum(predicted_class_15 == 1 & delinquent == 1) / sum(predicted_class_15 == 1),
+    FPR = sum(predicted_class_15 == 1 & delinquent == 0) / sum(delinquent == 0),
+    FNR = sum(predicted_class_15 == 0 & delinquent == 1) / sum(delinquent == 1)
   )
 
 # Calculate error rates by income group
@@ -2526,11 +2601,11 @@ income_metrics_m8 <- test_data_m8 %>%
   summarise(
     N = n(),
     Base_Rate = mean(delinquent),
-    Sensitivity = sum(predicted_class_50 == 1 & delinquent == 1) / sum(delinquent == 1),
-    Specificity = sum(predicted_class_50 == 0 & delinquent == 0) / sum(delinquent == 0),
-    Precision = sum(predicted_class_50 == 1 & delinquent == 1) / sum(predicted_class_50 == 1),
-    FPR = sum(predicted_class_50 == 1 & delinquent == 0) / sum(delinquent == 0),
-    FNR = sum(predicted_class_50 == 0 & delinquent == 1) / sum(delinquent == 1)
+    Sensitivity = sum(predicted_class_15 == 1 & delinquent == 1) / sum(delinquent == 1),
+    Specificity = sum(predicted_class_15 == 0 & delinquent == 0) / sum(delinquent == 0),
+    Precision = sum(predicted_class_15 == 1 & delinquent == 1) / sum(predicted_class_15 == 1),
+    FPR = sum(predicted_class_15 == 1 & delinquent == 0) / sum(delinquent == 0),
+    FNR = sum(predicted_class_15 == 0 & delinquent == 1) / sum(delinquent == 1)
   )
 
 
@@ -2592,8 +2667,8 @@ ggplot() +
   geom_sf(data = q2_map %>% filter(!is_q2), fill = "grey80", color = NA, linewidth = 0.001) +
   geom_sf(data = q2_map %>% filter(is_q2), fill = "#1B2A4A", color = NA, linewidth = 0.001) +
   labs(
-    title = "Low-Mid Income (Q2) Block Groups in Philadelphia",
-    subtitle = "Highlighted block groups contain Q2 income properties",
+    title = "Mid-High Income (Q3) Block Groups in Philadelphia",
+    subtitle = "Highlighted block groups contain Q3 income properties",
     caption = "Source: OPA / Property Tax Data"
   ) +
   theme_void() +
@@ -3221,3 +3296,63 @@ ggplot(moran_df_m9, aes(x = sim_I)) +
   ) +
   theme_minimal()
 ```
+
+## Export ALL Plots to PNG
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+library(ggplot2)
+
+# Create folder
+dir.create("presentation_pngs", showWarnings = FALSE)
+
+# Get all objects in environment
+all_objects <- ls()
+
+# Function to check if object is a ggplot
+is_ggplot <- function(x) {
+  inherits(x, "ggplot")
+}
+
+# Loop through all objects and save ggplots
+for (obj_name in all_objects) {
+  
+  obj <- get(obj_name)
+  
+  if (is_ggplot(obj)) {
+    
+    # Choose size based on complexity
+    plot_layers <- length(obj$layers)
+    
+    if (plot_layers >= 5) {
+      width <- 14
+      height <- 10
+    } else {
+      width <- 10
+      height <- 7
+    }
+    
+    file_name <- paste0("presentation_pngs/", obj_name, ".png")
+    
+    try({
+      ggsave(
+        filename = file_name,
+        plot = obj,
+        width = width,
+        height = height,
+        units = "in",
+        dpi = 300,
+        bg = "white"
+      )
+      cat("Saved:", file_name, "\n")
+    }, silent = TRUE)
+  }
+}
+
+cat("All ggplot objects exported to presentation_pngs/")
+```
+
+\`\`\`\`

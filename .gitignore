@@ -21,6 +21,7 @@ data.zip
 data/opa_properties_public.csv
 data/opa_properties_public.geojson
 data/phil_properties.csv
+labs/lab6/Model9_April27_PPA.qmd
 
 # Renviron / local secrets
 .Renviron

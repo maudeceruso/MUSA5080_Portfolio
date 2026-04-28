@@ -216,8 +216,8 @@ across more than 54,000 parcels (including residential and commercial)</li>
 <h2>Data Sources</h2>
 <table class="caption-top">
 <colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
+<col style="width: 55%">
+<col style="width: 44%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -281,6 +281,9 @@ across more than 54,000 parcels (including residential and commercial)</li>
 <li>Only test on properties <strong>not delinquent in 2019</strong> (lag_delinquent == 0)</li>
 </ul>
 <table class="caption-top">
+<colgroup>
+<col style="width: 100%">
+</colgroup>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;"></td>
@@ -346,27 +349,27 @@ across more than 54,000 parcels (including residential and commercial)</li>
 <section id="eda-where-is-delinquency" class="slide level2" data-background-color="#F5F0E8">
 <h2>EDA: Where is Delinquency?</h2>
 
-<img data-src="images/clipboard-1443021382.png" class="r-stretch"></section>
+<img data-src="hereisdelinq.png" width="343" class="r-stretch"></section>
 <section class="slide level2">
 
 
-<img data-src="images/clipboard-3567610765.png" class="r-stretch"></section>
+<img data-src="barchart.png" width="436" class="r-stretch"></section>
 <section class="slide level2">
 
 
-<img data-src="images/clipboard-3891627836.png" class="r-stretch"></section>
-<section id="eda-delinquency-rate-over-time" class="slide level2" data-background-color="#F5F0E8">
-<h2>EDA: Delinquency Rate Over Time</h2>
+<img data-src="logmedianincome.png" width="406" class="r-stretch"></section>
+<section class="slide level2">
 
-<img data-src="images/clipboard-676581362.png" class="r-stretch"></section>
+
+<img data-src="delinqspatial.png" width="411" class="r-stretch"></section>
 <section id="model-8-results" class="slide level2" data-background-color="#F5F0E8">
 <h2>Model 8: Results</h2>
 <p><strong>Undersampling + Class Weights + Neighborhood Fixed Effects</strong></p>
-<table class="caption-top">
+<table class="caption-top" style="width:99%;">
 <colgroup>
-<col style="width: 17%">
-<col style="width: 9%">
-<col style="width: 73%">
+<col style="width: 16%">
+<col style="width: 15%">
+<col style="width: 67%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -399,15 +402,10 @@ across more than 54,000 parcels (including residential and commercial)</li>
 </tbody>
 </table>
 </section>
-<section id="model-8-block-group-income-quartile" class="slide level2" data-background-color="#F5F0E8">
-<h2>Model 8: Block Group Income Quartile</h2>
+<section id="model-8-equity-analysis" class="slide level2" data-background-color="#F5F0E8">
+<h2>Model 8: Equity Analysis</h2>
 
-<img data-src="images/clipboard-2934847184.png" class="r-stretch"><p>The model successfully <strong>ranks</strong> risk even if precision is low.</p>
-</section>
-<section id="equity-analysis" class="slide level2" data-background-color="#F5F0E8">
-<h2>Equity Analysis</h2>
-
-<img data-src="images/clipboard-2621786471.png" class="r-stretch"><p>The model performs most equitably in <strong>mid-high income neighborhoods</strong></p>
+<img data-src="midhighincome.png" width="391" class="r-stretch"><p>The model performs slightly better in <strong>mid-high income neighborhoods</strong></p>
 </section>
 <section id="limitations" class="slide level2" data-background-color="#F5F0E8">
 <h2>Limitations</h2>
@@ -670,6 +668,44 @@ across more than 54,000 parcels (including residential and commercial)</li>
         ]
       });
     </script>
+    
+    <script>
+      // htmlwidgets need to know to resize themselves when slides are shown/hidden.
+      // Fire the "slideenter" event (handled by htmlwidgets.js) when the current
+      // slide changes (different for each slide format).
+      (function () {
+        // dispatch for htmlwidgets
+        function fireSlideEnter() {
+          const event = window.document.createEvent("Event");
+          event.initEvent("slideenter", true, true);
+          window.document.dispatchEvent(event);
+        }
+
+        function fireSlideChanged(previousSlide, currentSlide) {
+          fireSlideEnter();
+
+          // dispatch for shiny
+          if (window.jQuery) {
+            if (previousSlide) {
+              window.jQuery(previousSlide).trigger("hidden");
+            }
+            if (currentSlide) {
+              window.jQuery(currentSlide).trigger("shown");
+            }
+          }
+        }
+
+        // hookup for slidy
+        if (window.w3c_slidy) {
+          window.w3c_slidy.add_observer(function (slide_num) {
+            // slide_num starts at position 1
+            fireSlideChanged(null, w3c_slidy.slides[slide_num - 1]);
+          });
+        }
+
+      })();
+    </script>
+
     <script id="quarto-html-after-body" type="application/javascript">
       window.document.addEventListener("DOMContentLoaded", function (event) {
         const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")

@@ -1071,13 +1071,6 @@
     "text": "EDA: Where is Delinquency?"
   },
   {
-    "objectID": "labs/finalpres/ppa final presentation.html#eda-delinquency-rate-over-time",
-    "href": "labs/finalpres/ppa final presentation.html#eda-delinquency-rate-over-time",
-    "title": "Predicting Philadelphia Property Tax Delinquency",
-    "section": "EDA: Delinquency Rate Over Time",
-    "text": "EDA: Delinquency Rate Over Time"
-  },
-  {
     "objectID": "labs/finalpres/ppa final presentation.html#model-8-results",
     "href": "labs/finalpres/ppa final presentation.html#model-8-results",
     "title": "Predicting Philadelphia Property Tax Delinquency",
@@ -1085,18 +1078,11 @@
     "text": "Model 8: Results\nUndersampling + Class Weights + Neighborhood Fixed Effects\n\n\n\n\n\n\n\n\nMetric\nValue\nWhat it means\n\n\n\n\nSensitivity\n0.797\nCaught ~80% of properties that became delinquent\n\n\nSpecificity\n0.493\nCorrectly categorized 49% of non-delinquent properties\n\n\nPrecision\n0.011\n1.1% of flagged properties were truly delinquent\n\n\nAUC\n0.706\nconsidered acceptable model performance"
   },
   {
-    "objectID": "labs/finalpres/ppa final presentation.html#model-8-block-group-income-quartile",
-    "href": "labs/finalpres/ppa final presentation.html#model-8-block-group-income-quartile",
+    "objectID": "labs/finalpres/ppa final presentation.html#model-8-equity-analysis",
+    "href": "labs/finalpres/ppa final presentation.html#model-8-equity-analysis",
     "title": "Predicting Philadelphia Property Tax Delinquency",
-    "section": "Model 8: Block Group Income Quartile",
-    "text": "Model 8: Block Group Income Quartile\n\nThe model successfully ranks risk even if precision is low."
-  },
-  {
-    "objectID": "labs/finalpres/ppa final presentation.html#equity-analysis",
-    "href": "labs/finalpres/ppa final presentation.html#equity-analysis",
-    "title": "Predicting Philadelphia Property Tax Delinquency",
-    "section": "Equity Analysis",
-    "text": "Equity Analysis\n\nThe model performs most equitably in mid-high income neighborhoods"
+    "section": "Model 8: Equity Analysis",
+    "text": "Model 8: Equity Analysis\n\nThe model performs slightly better in mid-high income neighborhoods"
   },
   {
     "objectID": "labs/finalpres/ppa final presentation.html#limitations",

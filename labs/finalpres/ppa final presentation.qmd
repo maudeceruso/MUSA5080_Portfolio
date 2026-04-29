@@ -101,21 +101,14 @@ Which properties, not delinquent in 2019, will become delinquent in 2020?
 
 ## Data Sources {background-color="#F5F0E8"}
 
-+--------------------------------------------------+----------------------------------------+
-| Source                                           | Outcomes Created for Model             |
-+==================================================+========================================+
-| City of Philadelphia Real Estate Tax Delinquency | Delinquency outcome (2010 to 2020)     |
-+--------------------------------------------------+----------------------------------------+
-| OPA Property Characteristics                     | Market value, livable area, year built |
-+--------------------------------------------------+----------------------------------------+
-| ACS 2019 (Block Group)                           | Income, owner rate, age 65+, poverty   |
-+--------------------------------------------------+----------------------------------------+
-| ACS 2019 (Census Tract)                          | Unemployment, owner cost burden        |
-+--------------------------------------------------+----------------------------------------+
-| OpenDataPhilly                                   | BIDs, empowerment zones, HCA distance  |
-+--------------------------------------------------+----------------------------------------+
-| Philadelphia Crime Data                          | Burglary hotspot distance              |
-+--------------------------------------------------+----------------------------------------+
+| Source | Outcomes Created for Model |
+|----|----|
+| City of Philadelphia Real Estate Tax Delinquency | Delinquency outcome (2010 to 2020) |
+| OPA Property Characteristics | Market value, livable area, year built |
+| ACS 2019 (Block Group) | Income, owner rate, age 65+, poverty |
+| ACS 2019 (Census Tract) | Unemployment, owner cost burden |
+| OpenDataPhilly | BIDs, empowerment zones, HCA distance |
+| Philadelphia Crime Data | Burglary hotspot distance |
 
 ------------------------------------------------------------------------
 
@@ -149,9 +142,9 @@ Which properties, not delinquent in 2019, will become delinquent in 2020?
 -   Test on 2020
 -   Only test on properties **not delinquent in 2019** (lag_delinquent == 0)
 
-+:----------------------------------------------------------------------+
-|                                                                       |
-+-----------------------------------------------------------------------+
+|     |
+|:----|
+|     |
 
 ## Challenge: Class Imbalance {background-color="#F5F0E8"}
 
@@ -225,17 +218,12 @@ knitr::include_graphics("delinqspatial.png")
 
 **Undersampling + Class Weights + Neighborhood Fixed Effects**
 
-+-------------+------------+--------------------------------------------------------+
-| Metric      | Value      | What it means                                          |
-+=============+============+========================================================+
-| Sensitivity | 0.797      | Caught \~80% of properties that became delinquent      |
-+-------------+------------+--------------------------------------------------------+
-| Specificity | 0.493      | Correctly categorized 49% of non-delinquent properties |
-+-------------+------------+--------------------------------------------------------+
-| Precision   | 0.011      | 1.1% of flagged properties were truly delinquent       |
-+-------------+------------+--------------------------------------------------------+
-| AUC         | 0.706      | considered acceptable model performance                |
-+-------------+------------+--------------------------------------------------------+
+| Metric      | Value | What it means                                          |
+|-------------|-------|--------------------------------------------------------|
+| Sensitivity | 0.797 | Caught \~80% of properties that became delinquent      |
+| Specificity | 0.493 | Correctly categorized 49% of non-delinquent properties |
+| Precision   | 0.011 | 1.1% of flagged properties were truly delinquent       |
+| AUC         | 0.706 | considered acceptable model performance                |
 
 ------------------------------------------------------------------------
 

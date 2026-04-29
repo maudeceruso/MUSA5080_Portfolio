@@ -17,6 +17,7 @@ data_unclean/
 .Rproj.user/
 *.Rproj
 .RDataTmp3
+.RDataTmp4
 data.zip
 data/opa_properties_public.csv
 data/opa_properties_public.geojson

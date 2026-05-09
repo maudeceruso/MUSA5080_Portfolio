@@ -18,29 +18,10 @@ execute:
   message: false
 ---
 
-```{r library installing}
+```{r library load}
 #| message: false
 #| warning: false
 #| echo: false
-
-#installing packages and loading libraries
-
-install.packages("tidyverse")
-install.packages("lubridate")
-install.packages("sf")
-install.packages("tigris")
-install.packages("tidycensus")
-install.packages("viridis")
-install.packages("knitr")
-install.packages("kableExtra")
-install.packages("patchwork")
-install.packages("modelsummary")
-install.packages("scales")
-install.packages("here")
-install.packages("janitor")
-install.packages("spdep")
-install.packages("pROC")
-install.packages("caret")
 
 library(tidyverse)
 library(lubridate)
@@ -63,29 +44,27 @@ options(scipen = 999)
 options(tigris_use_cache = TRUE)
 ```
 
-# Introduction 
+# Introduction
 
 Between 2024 and 2025, the amount of property tax delinquency in Philadelphia increased from \$165M to \$178.5M (City of Philadelphia Department of Revenue, 2025, 2026). Given that 55% of property tax revenue is directed towards the School District of Philadelphia, with the remaining 45% going to general municipal services, the City must find ways to minimize non-delinquent properties from becoming delinquent to better focus on existing delinquent properties. Additionally, once properties become delinquent, they face the risk of remaining delinquent by accumulating 1.50% monthly interest on the amount owing, in addition to a 15% penalty. Both of these added costs sit on top of the nearly 1.40% property tax on the total market value. 
 
-While property tax delinquency is an issue faced by many disadvantaged individuals, such as lower-income homeowners, older adults on fixed incomes, among many others, COVID-19 was an unprecedented example of tax relief policies implemented to minimize impacts on residents. In Philadelphia, numerous tools were implemented, such as extending deadlines, suspending sheriff sales, halting reassessments, removing early payment discounts, and providing some targeted interventions for homeowners and older adults, to name a few. Given that COVID-19 was an unprecedented time, these policies were reactive. However, the economic impacts must also be considered as reduced tax collection results in less operating budget. For example, the 2021 budget saw a \$450M budget deficit (WHYY). When it comes to property taxes in Philadelphia, this means adverse implications for the School District, as well as budgets for municipal services such as public safety and street maintenance. Evidently, there is a need to identify properties at risk of delinquency before delinquency occurs, regularly and during major events like COVID-19, that would consider household hardship and unnecessary revenue loss. 
+While property tax delinquency is an issue faced by many disadvantaged individuals, such as lower-income homeowners, older adults on fixed incomes, among many others, COVID-19 was an unprecedented example of tax relief policies implemented to minimize impacts on residents. In Philadelphia, numerous tools were implemented, such as extending deadlines, suspending sheriff sales, halting reassessments, removing early payment discounts, and providing some targeted interventions for homeowners and older adults, to name a few. Given that COVID-19 was an unprecedented time, these policies were reactive. However, the economic impacts must also be considered as reduced tax collection results in less operating budget. For example, the 2021 budget saw a \$450M budget deficit (WHYY). When it comes to property taxes in Philadelphia, this means adverse implications for the School District, as well as budgets for municipal services such as public safety and street maintenance. Evidently, there is a need to identify properties at risk of delinquency before delinquency occurs, regularly and during major events like COVID-19, that would consider household hardship and unnecessary revenue loss.
 
-Thus, the aim of this report is to use a logistic regression model to identify properties that were not previously delinquent in 2019 but were at risk of delinquency in 2020. While the model is evaluated using the transition from 2019 to 2020, its broader purpose is to demonstrate a framework for identifying properties at elevated risk before delinquency occurs, including during periods of economic disruption. However, this tool is not intended to make enforcement decisions or replace broader housing assistance policies. Rather, its value lies in supporting early, low-cost outreach efforts that may help households avoid deeper financial distress while allowing the City to better prioritize limited resources. We also recognize that tax delinquency does not occur equally across all neighborhoods, as lower-income communities may face deeper structural barriers that require more sustained support beyond predictive targeting in isolation. 
+Thus, the aim of this report is to use a logistic regression model to identify properties that were not previously delinquent in 2019 but were at risk of delinquency in 2020. While the model is evaluated using the transition from 2019 to 2020, its broader purpose is to demonstrate a framework for identifying properties at elevated risk before delinquency occurs, including during periods of economic disruption. However, this tool is not intended to make enforcement decisions or replace broader housing assistance policies. Rather, its value lies in supporting early, low-cost outreach efforts that may help households avoid deeper financial distress while allowing the City to better prioritize limited resources. We also recognize that tax delinquency does not occur equally across all neighborhoods, as lower-income communities may face deeper structural barriers that require more sustained support beyond predictive targeting in isolation.
 
- 
+**Intro citations:**
 
-**Intro citations:** 
+City of Philadelphia Department of Revenue. (2025, June 12). Eight questions answered about Philly property taxes. City of Philadelphia. <https://www.phila.gov/2025-06-12-eight-questions-answered-about-philly-property-taxes/>
 
-City of Philadelphia Department of Revenue. (2025, June 12). Eight questions answered about Philly property taxes. City of Philadelphia. <https://www.phila.gov/2025-06-12-eight-questions-answered-about-philly-property-taxes/>  
+City of Philadelphia Department of Revenue. (2026, April 21). Real estate tax delinquency overview FY 2025. City of Philadelphia. <https://www.phila.gov/media/20260421113315/Real-Estate-Tax-delinquency-overview-FY-2025.pdf>
 
-City of Philadelphia Department of Revenue. (2026, April 21). Real estate tax delinquency overview FY 2025. City of Philadelphia. <https://www.phila.gov/media/20260421113315/Real-Estate-Tax-delinquency-overview-FY-2025.pdf> 
+City of Philadelphia Department of Revenue. (2025, April 10). Real estate tax delinquency overview FY 2024. City of Philadelphia. <https://www.phila.gov/media/20250410083015/Real-Estate-Tax-delinquency-overview-FY-2024.pdf>
 
-City of Philadelphia Department of Revenue. (2025, April 10). Real estate tax delinquency overview FY 2024. City of Philadelphia. <https://www.phila.gov/media/20250410083015/Real-Estate-Tax-delinquency-overview-FY-2024.pdf> 
+City of Philadelphia Office of Property Assessment. (n.d.). Actual Value Initiative (AVI). City of Philadelphia. Actual Value Initiative (AVI). <https://www.phila.gov/departments/office-of-property-assessment/avi/>
 
-City of Philadelphia Office of Property Assessment. (n.d.). Actual Value Initiative (AVI). City of Philadelphia. Actual Value Initiative (AVI). <https://www.phila.gov/departments/office-of-property-assessment/avi/>  
+City of Philadelphia. (n.d.). Property taxes. City of Philadelphia. <https://www.phila.gov/services/payments-assistance-taxes/taxes/property-and-real-estate-taxes/>
 
-City of Philadelphia. (n.d.). Property taxes. City of Philadelphia. <https://www.phila.gov/services/payments-assistance-taxes/taxes/property-and-real-estate-taxes/>  
-
-City of Philadelphia Department of Revenue. (n.d.). Real estate tax. City of Philadelphia. City of Philadelphia Real Estate Tax. <https://www.economyleague.org/resources/ebb-and-flow-realty-transfer-tax-revenue-philadelphia-2010-2024>  
+City of Philadelphia Department of Revenue. (n.d.). Real estate tax. City of Philadelphia. City of Philadelphia Real Estate Tax. <https://www.economyleague.org/resources/ebb-and-flow-realty-transfer-tax-revenue-philadelphia-2010-2024>
 
 The Economy League of Greater Philadelphia. (2025). The ebb and flow of realty transfer tax revenue in Philadelphia, 2010 to 2024. The Economy League of Greater Philadelphia. <https://www.economyleague.org/resources/ebb-and-flow-realty-transfer-tax-revenue-philadelphia-2010-2024>  
 
@@ -169,10 +148,6 @@ prop_tax <- read.csv(here("data/geocoded_output.csv")) %>%
          is_actionable == TRUE) %>%
   mutate(delinquent = 1)
 
-#creating property tax data 
-write.csv(prop_tax, "data/prop_taxnew.csv")
-
-
 #bringing final opa property data
 opa_prop <- read.csv(here("data/opa_properties_for_FINAL.csv"))
 
@@ -254,13 +229,13 @@ Moving forward with the other forms of ACS data utilized, we used some census tr
 
 **Census Data write up Citations** 
 
-Bankrate. (2025, July 23). What happens when you pay off your mortgage?[ https://www.bankrate.com/mortgages/what-happens-when-mortgage-is-paid-off/](https://www.bankrate.com/mortgages/what-happens-when-mortgage-is-paid-off/) 
+Bankrate. (2025, July 23). What happens when you pay off your mortgage?<https://www.bankrate.com/mortgages/what-happens-when-mortgage-is-paid-off/> 
 
-Center for Community Progress. (2022, October). Reimagine delinquent property tax enforcement: How to reduce vacancy, advance racial equity, and improve public services.[ https://communityprogress.org/publications/reimagine-delinquent-property-tax-enforcement/](https://communityprogress.org/publications/reimagine-delinquent-property-tax-enforcement/)  
+Center for Community Progress. (2022, October). Reimagine delinquent property tax enforcement: How to reduce vacancy, advance racial equity, and improve public services.<https://communityprogress.org/publications/reimagine-delinquent-property-tax-enforcement/>  
 
 City of Philadelphia. (n.d.). Set up an owner-occupied real estate tax payment agreement (OOPA).[ ](https://www.phila.gov/services/payments-assistance-taxes/payment-plans-and-assistance-programs/income-based-programs-for-residents/set-up-an-owner-occupied-real-estate-tax-payment-agreement-oopa/?utm_source=chatgpt.com)<https://www.phila.gov/services/payments-assistance-taxes/payment-plans-and-assistance-programs/income-based-programs-for-residents/set-up-an-owner-occupied-real-estate-tax-payment-agreement-oopa/> 
 
-Law for Seniors. (2024, August 20). Past due income taxes and low income seniors.[ https://lawforseniors.org/topics/money-and-debt/taxes/past-due-income-taxes-and-low-income-seniors](https://lawforseniors.org/topics/money-and-debt/taxes/past-due-income-taxes-and-low-income-seniors) 
+Law for Seniors. (2024, August 20). Past due income taxes and low income seniors.<https://lawforseniors.org/topics/money-and-debt/taxes/past-due-income-taxes-and-low-income-seniors> 
 
 ### Census Block Group-Level
 
@@ -2106,7 +2081,7 @@ cm_metrics_m6 %>%
 
 ```
 
-Encord. (n.d.). Balanced and imbalanced datasets in machine learning: Full introduction. Encord.[ https://encord.com/blog/an-introduction-to-balanced-and-imbalanced-datasets-in-machine-learning/](https://encord.com/blog/an-introduction-to-balanced-and-imbalanced-datasets-in-machine-learning/) 
+Encord. (n.d.). Balanced and imbalanced datasets in machine learning: Full introduction. Encord.<https://encord.com/blog/an-introduction-to-balanced-and-imbalanced-datasets-in-machine-learning/> 
 
 ### Model 7: using class weights on Delinquent (1)
 
@@ -3038,9 +3013,9 @@ Determination of spatial and census-level features was carried out by model deve
 
 **Limitation Citations** 
 
-Goliath Data. (n.d.). Tax delinquency detection: Early warning signals.[ https://goliathdata.com/tax-delinquency-detection-early-warning-signals](https://goliathdata.com/tax-delinquency-detection-early-warning-signals) 
+Goliath Data. (n.d.). Tax delinquency detection: Early warning signals.<https://goliathdata.com/tax-delinquency-detection-early-warning-signals> 
 
-Lincoln County. Types of Property Ownership. n.d.[ https://cms5.revize.com/revize/lincolncounty/-Types%20of%20Property%20Ownership-.pdf](https://cms5.revize.com/revize/lincolncounty/-Types%20of%20Property%20Ownership-.pdf) 
+Lincoln County. Types of Property Ownership. n.d.<https://cms5.revize.com/revize/lincolncounty/-Types%20of%20Property%20Ownership-.pdf> 
 
 The Pew Charitable Trusts. (2021, August 4). How tangled titles affect Philadelphia. <https://www.pew.org/en/research-and-analysis/reports/2021/08/how-tangled-titles-affect-philadelphia> 
 

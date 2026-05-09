@@ -1,8 +1,8 @@
 ---
-title: "PPA_FinalAssignment"
+title: "Final Challenge: Predicting Property Tax Delinquency using Logistic Regression"
 subtitle: "CPLN 5080 - Spring 2026"
 author: Jenny Brar, Maude Ceruso, Shubhanga Satyal
-date: today
+date: May 8, 2026
 format:
   html:
     code-fold: show
@@ -44,6 +44,22 @@ options(scipen = 999)
 options(tigris_use_cache = TRUE)
 ```
 
+# Executive Summary
+
+This report develops a predictive framework to identify Philadelphia properties that are at risk of becoming property tax delinquent before delinquency actually occurs, particularly during periods of economic hardship like COVID-19. Property tax delinquency in Philadelphia increased from approximately \$165 million to \$178.5 million between 2024 and 2025, creating challenges for both municipal services and the School District of Philadelphia which relies heavily on property tax revenue. 
+
+To better understand which properties are most vulnerable to delinquency, we created a longitudinal dataset of single-family properties in Philadelphia from 2010 to 2020. The goal of this project was not to create a tool for enforcement, but instead to provide the city with a way to identify financially vulnerable households earlier so that outreach and assistance can happen before penalties and debt begin to accumulate.  
+
+The project combined multiple sources of data, including property tax delinquency records, census data, crime data, and neighborhood level spatial features. We used variables such as poverty rate, SNAP participation, housing burden, educational attainment, unemployment, proximity to affordable housing, distance to housing counseling agencies, and whether properties were located within Business Improvement Districts or Empowerment Zones. Spatial joins and feature engineering techniques were used to connect property-level observations with broader neighborhood conditions across Philadelphia.  
+
+Several logistic regression models were tested throughout the analysis. One of the biggest challenges was the severe class imbalance in the dataset, since fewer than 1% of properties became delinquent. To better account for temporal patterns, the model incorporated yearly census data and used a validation framework where models were first trained on 2010-2018 data and validated on 2019 data before being retrained on 2010-2019 data and tested on 2020 outcomes. After testing multiple approaches, Model 8 produced the strongest results by combining sample rebalancing and inverse class weighting. The model achieved a sensitivity score of 84.2%, correctly identifying 3,430 properties that later became delinquent in 2020 while missing only 225.  
+
+The exploratory analysis also revealed clear spatial and socioeconomic patterns. Delinquency increased significantly between 2010 and 2020 and remaining concentrated in areas facing greater economic hardship. Properties located within Business Improvement Districts were generally less likely to become delinquent, while properties located near affordable housing developments inside Empowerment Zones were more likely to experience delinquency.  
+
+While the model performed strongly in terms of sensitivity, it also produced a relatively high number of false positives, meaning that many properties flagged as at-risk did not actually become delinquent. In addition, the model performed less effectively in some of Philadelphia’s lowest income neighborhoods, which highlights the broader structural inequalities tied to property tax delinquency. 
+
+Even with these limitations, the model still provides meaningful policy value. Rather than being used for punitive enforcmenet, the model is best suited for low cost interventions such as mailed outreach about payment plans, hardship exemptions, and housing counseling programs. Overall this project demonstrates how predictive modeling can help the City of Philadelphia take a more proactive and equitable approach to address property tax delinquency while still recognizing the need for broader long-term support in economically vulnerable communities.  
+
 # Introduction
 
 Between 2024 and 2025, the amount of property tax delinquency in Philadelphia increased from \$165M to \$178.5M (City of Philadelphia Department of Revenue, 2025, 2026). Given that 55% of property tax revenue is directed towards the School District of Philadelphia, with the remaining 45% going to general municipal services, the City must find ways to minimize non-delinquent properties from becoming delinquent to better focus on existing delinquent properties. Additionally, once properties become delinquent, they face the risk of remaining delinquent by accumulating 1.50% monthly interest on the amount owing, in addition to a 15% penalty. Both of these added costs sit on top of the nearly 1.40% property tax on the total market value. 
@@ -52,27 +68,9 @@ While property tax delinquency is an issue faced by many disadvantaged individua
 
 Thus, the aim of this report is to use a logistic regression model to identify properties that were not previously delinquent in 2019 but were at risk of delinquency in 2020. While the model is evaluated using the transition from 2019 to 2020, its broader purpose is to demonstrate a framework for identifying properties at elevated risk before delinquency occurs, including during periods of economic disruption. However, this tool is not intended to make enforcement decisions or replace broader housing assistance policies. Rather, its value lies in supporting early, low-cost outreach efforts that may help households avoid deeper financial distress while allowing the City to better prioritize limited resources. We also recognize that tax delinquency does not occur equally across all neighborhoods, as lower-income communities may face deeper structural barriers that require more sustained support beyond predictive targeting in isolation.
 
-**Intro citations:**
+# Methods
 
-City of Philadelphia Department of Revenue. (2025, June 12). Eight questions answered about Philly property taxes. City of Philadelphia. <https://www.phila.gov/2025-06-12-eight-questions-answered-about-philly-property-taxes/>
-
-City of Philadelphia Department of Revenue. (2026, April 21). Real estate tax delinquency overview FY 2025. City of Philadelphia. <https://www.phila.gov/media/20260421113315/Real-Estate-Tax-delinquency-overview-FY-2025.pdf>
-
-City of Philadelphia Department of Revenue. (2025, April 10). Real estate tax delinquency overview FY 2024. City of Philadelphia. <https://www.phila.gov/media/20250410083015/Real-Estate-Tax-delinquency-overview-FY-2024.pdf>
-
-City of Philadelphia Office of Property Assessment. (n.d.). Actual Value Initiative (AVI). City of Philadelphia. Actual Value Initiative (AVI). <https://www.phila.gov/departments/office-of-property-assessment/avi/>
-
-City of Philadelphia. (n.d.). Property taxes. City of Philadelphia. <https://www.phila.gov/services/payments-assistance-taxes/taxes/property-and-real-estate-taxes/>
-
-City of Philadelphia Department of Revenue. (n.d.). Real estate tax. City of Philadelphia. City of Philadelphia Real Estate Tax. <https://www.economyleague.org/resources/ebb-and-flow-realty-transfer-tax-revenue-philadelphia-2010-2024>
-
-The Economy League of Greater Philadelphia. (2025). The ebb and flow of realty transfer tax revenue in Philadelphia, 2010 to 2024. The Economy League of Greater Philadelphia. <https://www.economyleague.org/resources/ebb-and-flow-realty-transfer-tax-revenue-philadelphia-2010-2024>  
-
-WHYY News. (2021, June 25). Philadelphia faces \$450 million budget deficit due to coronavirus pandemic. WHYY. <https://whyy.org/articles/philly-facing-450m-budget-shortfall-officials-eye-cuts-taxes-and-privatization/>  
-
-# Methods 
-
-## Data Cleaning 
+## Data Cleaning
 
 Prior to conducting any analysis, each data set was downloaded, regardless of if they were used in our final model. Data cleaning and preparation from each data source was required. 
 
@@ -84,39 +82,7 @@ To indicate the reliability of the variables, the percent of margin of error was
 
  We selected the variables we wanted to include from the delinquent and OPA data sets- we did not need the structural features may influence home sales price, but this is not what. For all spatial features, we selected the columns required for future engineering, for example, for Business improvements districts, we opted to the GEOID and BID names. A similar process followed for other spatial features. GEOID were retained for joining purposes in later code. Some variables underwent spatial engineering the same code as data cleaning, such gas HCA buffers. More robust feature engineering was done later. Additionally, to ensure a more seamless process when engineering features, all datasets were converted to Coordinate Reference System 2272. Finally, all NA values were removed to ensure only observations with data are used in the final model. 
 
-We must note this was an iterative and cyclical process where we often jumped between modeling and Data cleaning as we continued to unearth new issues in our data. What is presented here is a summary of the steps taken, though it was a much more rigorous and time-consuming process- more than what can be described in words. For that reason, what is presented is a simplified summary. 
-
-**All spatial data, unless otherwise cited:** 
-
-City of Philadelphia Department of Planning and Development. (2025). Datasets. OpenDataPhilly. <https://opendataphilly.org/datasets> 
-
-**Census Data (Socioeconomic and population data at block group and tract levels):**  
-
-U.S. Census Bureau. (2010). American Community Survey 5-year estimates (2006–2010). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2011). American Community Survey 5-year estimates (2007–2011). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2012). American Community Survey 5-year estimates (2008–2012). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2013). American Community Survey 5-year estimates (2009–2013). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2014). American Community Survey 5-year estimates (2010–2014). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2015). American Community Survey 5-year estimates (2011–2015). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2016). American Community Survey 5-year estimates (2012–2016). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2017). American Community Survey 5-year estimates (2013–2017). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2018). American Community Survey 5-year estimates (2014–2018). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2019). American Community Survey 5-year estimates (2015–2019). [https://data.census.gov](https://data.census.gov/)  
-
-U.S. Census Bureau. (2020). American Community Survey 5-year estimates (2016–2020). [https://data.census.gov](https://data.census.gov/)  
-
-**Delinquent Tax Data** 
-
-City of Philadelphia Department of Revenue. (n.d.). Real estate tax delinquencies (visualization). City of Philadelphia Open Data. <https://data.phila.gov/visualizations/real-estate-tax-delinquencies>  
+We must note this was an iterative and cyclical process where we often jumped between modeling and Data cleaning as we continued to unearth new issues in our data. What is presented here is a summary of the steps taken, though it was a much more rigorous and time-consuming process- more than what can be described in words. For that reason, what is presented is a simplified summary.
 
 ### Set-up: Loading and Cleaning Key Datasets
 
@@ -225,17 +191,7 @@ The proportion of White individuals may help determine the racial diversity of s
 
 The vacancy rate for localities may also be as essential as local economic conditions. Tax-delinquent properties are more likely to be vacant (Center for Community Progress, 2022), and thus vacancy rate may become an essential indicator or predictor for the model. 
 
-Moving forward with the other forms of ACS data utilized, we used some census tract-level data. These variables were not available at the more granular block group level, but they were essential nonetheless and were therefore included at the tract level. These variables will then be spatially joined to the block group level later. They include unemployment rate, bachelor’s+ rate, poverty rate, owner burden rate, renter burden rate, combined burden rate, and SNAP rate. All of these are economic indicators that are essential to include in this analysis of tax delinquency. 
-
-**Census Data write up Citations** 
-
-Bankrate. (2025, July 23). What happens when you pay off your mortgage?<https://www.bankrate.com/mortgages/what-happens-when-mortgage-is-paid-off/> 
-
-Center for Community Progress. (2022, October). Reimagine delinquent property tax enforcement: How to reduce vacancy, advance racial equity, and improve public services.<https://communityprogress.org/publications/reimagine-delinquent-property-tax-enforcement/>  
-
-City of Philadelphia. (n.d.). Set up an owner-occupied real estate tax payment agreement (OOPA).[ ](https://www.phila.gov/services/payments-assistance-taxes/payment-plans-and-assistance-programs/income-based-programs-for-residents/set-up-an-owner-occupied-real-estate-tax-payment-agreement-oopa/?utm_source=chatgpt.com)<https://www.phila.gov/services/payments-assistance-taxes/payment-plans-and-assistance-programs/income-based-programs-for-residents/set-up-an-owner-occupied-real-estate-tax-payment-agreement-oopa/> 
-
-Law for Seniors. (2024, August 20). Past due income taxes and low income seniors.<https://lawforseniors.org/topics/money-and-debt/taxes/past-due-income-taxes-and-low-income-seniors> 
+Moving forward with the other forms of ACS data utilized, we used some census tract-level data. These variables were not available at the more granular block group level, but they were essential nonetheless and were therefore included at the tract level. These variables will then be spatially joined to the block group level later. They include unemployment rate, bachelor’s+ rate, poverty rate, owner burden rate, renter burden rate, combined burden rate, and SNAP rate. All of these are economic indicators that are essential to include in this analysis of tax delinquency.
 
 ### Census Block Group-Level
 
@@ -632,19 +588,19 @@ Due to limited machine capacity, our team opted to calculate spatial distance in
 
 The project began by constructing a longitudinal (panel) dataset of Philadelphia single-family properties from 2010 to 2020. Property-level tax delinquency records were cleaned, standardized, and expanded into yearly observations using the property OPA number and year as the unique identifiers. Then left joined to merge yearly tax delinquency data with panel structure to preserve all properties across all years, even if certain observations had missing values.  
 
-We wanted to use panel data to see each how each property acted in terms of delinquency each year. This was essential to our main guiding research question.  
+We wanted to use panel data to see each how each property acted in terms of delinquency each year. This was essential to our main guiding research question.
 
 ### Joining Census Data to Property-Year Panel: Block group
 
-We used ACS 5 year data to get socioeconomic information at the census block group level. Philadelphia census block group shapefiles were imported and standardized using GEOID identifiers and then joined to attach block group polygons with census data.  
+We used ACS 5 year data to get socioeconomic information at the census block group level. Philadelphia census block group shapefiles were imported and standardized using GEOID identifiers and then joined to attach block group polygons with census data.
 
-After that, the property panel was converted into a spatial dataset and spatially joined to census block groups using within. This allowed each property to take on the socioeconomic characteristics in the census block group it falls within. The final set of variables were selected as they to some extent reflect economic conditions.  
+After that, the property panel was converted into a spatial dataset and spatially joined to census block groups using within. This allowed each property to take on the socioeconomic characteristics in the census block group it falls within. The final set of variables were selected as they to some extent reflect economic conditions.
 
-Variables Included 
+Variables Included:
 
 -   Poverty rate
 
--   Reason: places with higher poverty may have more cases of tax delinquency as they already face economic hardship.  
+    -   Places with higher poverty may have more cases of tax delinquency as they already face economic hardship.  
 
 -   Educational attainment 
 
@@ -960,15 +916,15 @@ ggplot() +
 
 Spatial autocorrelation analysis was conducted using Local Moran’s I statistics to identify statistically significant crime clusters and spatial hotspots.We created features: local_i, p_value, is_significant, and moran_class to get the final categories: 
 
-High-High 
+-   High-High
 
-Low-Low 
+-   Low-Low
 
-High-Low 
+-   High-Low
 
-Low-High 
+-   Low-High
 
-Not Significant 
+-   Not Significant
 
 These variables are expected to capture spatial clustering patterns in crime
 
@@ -1098,7 +1054,7 @@ phil_hood <- st_transform(phil_hood, 2272)
 panel_census_geo <- st_join(panel_census_geo, phil_hood, join = st_within)
 ```
 
-# Building Panel Dataframe
+# Building The Panel Dataframe
 
 ```{r}
 #| message: false
@@ -1737,13 +1693,13 @@ cat("Years in data:", paste(sort(unique(final_model_df$year)), collapse = ", "),
 
 # Running Logistic Regression
 
-## Logistic model- Analysis Overview  
+## Logistic model- Analysis Overview 
 
-Our initial model building process involved gradually adding variables to observe how model performance changed. Our initial model selection was based on lower AIC (Akaike Information Criterion), which evaluates model fit while penalizing unnecessary complexity. Among the initial Models 1 to 5, Model 5 produced the lowest AIC, so that was taken further to evaluate. However, its ROC AUC performance was very poor, when looking at the predicted probabilitygraph, sensitivity and specificity. ROC AUC (Receiver Operating Characteristic and the Area Under the Curve) measures how well a model distinguishes between delinquent and non-delinquent properties across different classification thresholds, with higher values indicating stronger predictive performance. This showed that although Model 5 fit the training data relatively well (maybe too well) it did not effectively identify delinquent properties. 
+Our initial model building process involved gradually adding variables to observe how model performance changed. Our initial model selection was based on lower AIC (Akaike Information Criterion), which evaluates model fit while penalizing unnecessary complexity. Among the initial Models 1 to 5, Model 5 produced the lowest AIC, so that was taken further to evaluate. However, its ROC AUC performance was very poor, when looking at the predicted probabilitygraph, sensitivity and specificity. ROC AUC (Receiver Operating Characteristic and the Area Under the Curve) measures how well a model distinguishes between delinquent and non-delinquent properties across different classification thresholds, with higher values indicating stronger predictive performance. This showed that although Model 5 fit the training data relatively well (maybe too well) it did not effectively identify delinquent properties.
 
-After further investigation, we identified severe class imbalance as a major issue, since less than 1% of properties in the dataset were delinquent (1). To address this, Model 6 added model 5 with sample rebalancing to approximately a 60:40 ratio and used a testing threshold of 0.15. Model 7, added to model 5 using inverse class weights and tested thresholds of 0.03 and 0.15, ultimately selecting 0.15. Model 8 combined both approaches by using sample rebalancing together with inverse class weights while maintaining the 0.15 threshold. We evaluated Models 6 through 8 using ROC AUC, sensitivity, specificity, precision, and predicted probability distribution graphs. These graphs visualize how predicted probabilities are distributed across delinquent and non-delinquent properties.  
+After further investigation, we identified severe class imbalance as a major issue, since less than 1% of properties in the dataset were delinquent (1). To address this, Model 6 added model 5 with sample rebalancing to approximately a 60:40 ratio and used a testing threshold of 0.15. Model 7, added to model 5 using inverse class weights and tested thresholds of 0.03 and 0.15, ultimately selecting 0.15. Model 8 combined both approaches by using sample rebalancing together with inverse class weights while maintaining the 0.15 threshold. We evaluated Models 6 through 8 using ROC AUC, sensitivity, specificity, precision, and predicted probability distribution graphs. These graphs visualize how predicted probabilities are distributed across delinquent and non-delinquent properties.
 
-Sensitivity, or recall, measures the proportion of truly delinquent properties correctly identified by the model. Specificity measures the proportion of non-delinquent properties correctly identified, while precision measures the proportion of delinquent-classified properties that were delinquent. Sensitivity was the most prioritized because from a policy and resource perspective it is better to focus on properties that are more likely to become delinquent. Missing a truly delinquent property may prevent households from receiving timely outreach before penalties and liens accumulate, whereas falsely classifying a non-delinquent property only results in an unnecessary outreach of contact. Model 8 had the best confusion matrix with sensitivity at .842 and the best distributed predicted probabilities.  
+Sensitivity, or recall, measures the proportion of truly delinquent properties correctly identified by the model. Specificity measures the proportion of non-delinquent properties correctly identified, while precision measures the proportion of delinquent-classified properties that were delinquent. Sensitivity was the most prioritized because from a policy and resource perspective it is better to focus on properties that are more likely to become delinquent. Missing a truly delinquent property may prevent households from receiving timely outreach before penalties and liens accumulate, whereas falsely classifying a non-delinquent property only results in an unnecessary outreach of contact. Model 8 had the best confusion matrix with sensitivity at .842 and the best distributed predicted probabilities.
 
 ## Temporal Test/Train Split
 
@@ -2081,9 +2037,7 @@ cm_metrics_m6 %>%
 
 ```
 
-Encord. (n.d.). Balanced and imbalanced datasets in machine learning: Full introduction. Encord.<https://encord.com/blog/an-introduction-to-balanced-and-imbalanced-datasets-in-machine-learning/> 
-
-### Model 7: using class weights on Delinquent (1)
+### Model 7: using class weights on Delinquent 
 
 ```{r}
 #| message: false
@@ -2111,10 +2065,6 @@ train_data$delinq_weight <- w[as.character(train_data$delinquent)]
 
 #basically by weighing 1s more, we're saying that wonrg predictions of 1s is worse than of 0s
 ```
-
-Yadav, D. (2020, April 14). Weighted logistic regression for imbalanced dataset. Medium. <https://medium.com/data-science/weighted-logistic-regression-for-imbalanced-dataset-9a5cd88e68b>
-
-GeeksforGeeks. (2024, March 11). Weighted logistic regression for imbalanced dataset. <https://www.geeksforgeeks.org/machine-learning/weighted-logistic-regression-for-imbalanced-dataset/>
 
 ```{r}
 #| message: false
@@ -2343,7 +2293,7 @@ summary(logit_model8)
 
 # Model Results and Evaluation 
 
-Model 8 represents a strong first step toward delinquency detection. Its greatest strength is recall. For example, in 2020, the model correctly identified 3,430 properties that later became delinquent while missing only 226. We were excited to find that the model appeared responsive to economic conditions in 2020, as presented in the graphs above. The rise in true positives between 2019 and 2020 reflected the financial disruption caused by COVID-19, suggesting the model captures indications of financial hardship that changes instead of static predictions each year. This offers opportunity for the City of Philadelphia to identify rising risk early enough to intervene before debt becomes unmanageable.  
+Model 8 represents a strong first step toward delinquency detection. Its greatest strength is recall. For example, in 2020, the model correctly identified 3,430 properties that later became delinquent while missing only 226. We were excited to find that the model appeared responsive to economic conditions in 2020, as presented in the graphs above. The rise in true positives between 2019 and 2020 reflected the financial disruption caused by COVID-19, suggesting the model captures indications of financial hardship that changes instead of static predictions each year. This offers opportunity for the City of Philadelphia to identify rising risk early enough to intervene before debt becomes unmanageable.
 
 We must also acknowledge that the model tends to struggle with precision. For every truly delinquent property flagged in 2020, many non-delinquent properties were also flagged . This makes the model less beneficial for resource-intensive interventions on its own. The equity analysis also shows that the model performed not as great in the city’s lowest-income neighborhoods, where consequences of missed delinquency are often the most severe.
 
@@ -2719,7 +2669,7 @@ ggplot() +
 #| fig-width: 9
 #| fig-height: 5
 
-# ── MORAN'S I DIAGNOSTIC FOR MODEL 8 ─────────────────────────────────────────
+# MORAN'S I DIAGNOSTIC FOR MODEL 8
 library(spdep)
 
 bg_residuals_clean_m8 <- block_group_residuals_m8 %>%
@@ -2987,21 +2937,21 @@ income_metrics_m8 %>%
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ```
 
-# Limitations 
+# Limitations
 
-Our model serves as a proactive tool for emergency preparedness strategy, primarily for unprecedented economic shocks. The economic strains of the COVID-19 pandemic were felt globally, and Philadelphia was also significantly impacted. Thus, this model may be an essential tool for city officials to identify vulnerable households that are prone to delinquency. 
+Our model serves as a proactive tool for emergency preparedness strategy, primarily for unprecedented economic shocks. The economic strains of the COVID-19 pandemic were felt globally, and Philadelphia was also significantly impacted. Thus, this model may be an essential tool for city officials to identify vulnerable households that are prone to delinquency.
 
-While, as mentioned earlier, this model is essential for the City of Philadelphia, it also comes with several limitations as listed below: 
+While, as mentioned earlier, this model is essential for the City of Philadelphia, it also comes with several limitations as listed below:
 
-1.  **Ownership information:**  
+1.  **Ownership information:**
 
-In preparing the model and identifying variables, an essential consideration was whether to utilize ownership information in delinquency prediction. Property transfer may be indicative of current financial hardship for homeowners, which may result in selling property to manage financial strain (Goliath Data, n.d.). 
+In preparing the model and identifying variables, an essential consideration was whether to utilize ownership information in delinquency prediction. Property transfer may be indicative of current financial hardship for homeowners, which may result in selling property to manage financial strain (Goliath Data, n.d.).
 
-However, in the context of this assignment, we are unable to consider ownership due to inconsistencies in the property tax delinquency data employed. Property naming formats between the delinquency data and the OPA property data also suggest mismatches, showing inconsistent labeling methodology between the two datasets we used. 
+However, in the context of this assignment, we are unable to consider ownership due to inconsistencies in the property tax delinquency data employed. Property naming formats between the delinquency data and the OPA property data also suggest mismatches, showing inconsistent labeling methodology between the two datasets we used.
 
-Additionally, homeownership change does not guarantee essential economic transitions between families. Sometimes, ownership may be listed as co-ownership, and thus a transfer may be made between one of the co-owners while the other co-owners maintain ownership (Lincoln County, n.d.). Further, ownership after death or transfer between family members may also be factored in, providing unreliable ownership transfer information for this specific context. Additionally, the issue of tangled titles is essential to consider within this limitation, primarily in Philadelphia’s context (The Pew Charitable Trusts, 2021).  
+Additionally, homeownership change does not guarantee essential economic transitions between families. Sometimes, ownership may be listed as co-ownership, and thus a transfer may be made between one of the co-owners while the other co-owners maintain ownership (Lincoln County, n.d.). Further, ownership after death or transfer between family members may also be factored in, providing unreliable ownership transfer information for this specific context. Additionally, the issue of tangled titles is essential to consider within this limitation, primarily in Philadelphia’s context (The Pew Charitable Trusts, 2021).
 
-2.  **Temporal Factors for Census Variables**  
+2.  **Temporal Factors for Census Variables**
 
 While considering census variables for the panel data we produced, we utilized 5-year ACS data, which, while more reliable than 1-year ACS data, is still not on par with the accuracy of decennial census data. However, our limitations go beyond this. The 5-year ACS data is unavailable at the block group level for years before 2013. Therefore, data from 2010 to 2013 includes a snapshot of the year 2013 ACS data, making it not completely temporally representative and therefore a model limitation. 
 
@@ -3011,17 +2961,7 @@ Additionally, crime data is also static and stagnant for 2019. However, due to t
 
 Determination of spatial and census-level features was carried out by model developers with an urban planning background. While taking an informed and holistic approach, there may still be biases in modeling choices and the variables used. 
 
-**Limitation Citations** 
-
-Goliath Data. (n.d.). Tax delinquency detection: Early warning signals.<https://goliathdata.com/tax-delinquency-detection-early-warning-signals> 
-
-Lincoln County. Types of Property Ownership. n.d.<https://cms5.revize.com/revize/lincolncounty/-Types%20of%20Property%20Ownership-.pdf> 
-
-The Pew Charitable Trusts. (2021, August 4). How tangled titles affect Philadelphia. <https://www.pew.org/en/research-and-analysis/reports/2021/08/how-tangled-titles-affect-philadelphia> 
-
- 
-
-# Discussion and Policy Recommendations  
+# Discussion and Policy Recommendations
 
 Despite these limitations, the model still has clear policy value if used strategically. The mode’s strength lies in narrowing down the city’s focus from roughly 293,000 single-family homes to a smaller sample that contains most at-risk properties. In that context, false positives become more manageable because the cost of proactive outreach is still relatively low compared to the cost of foreclosure or displacement. The model is therefore best suited for low-cost interventions such as mailed notices about payment plans, reminders about hardship exemptions, referrals to housing counseling services, among other interventions. When supplemented by community-based outreach, Model 8 provides the City of Philadelphia with a practical basis for a more proactive and equitable approach to property tax delinquency. 
 
@@ -3036,3 +2976,71 @@ First, we would like to thank Professor Allison Lassiter for teaching this class
 **AI Acknowledgment** 
 
 In addition to class materials and previous lab assignments, we utilized the support of Anthropic’s Claude and OpenAI’s ChatGPT. Claude assisted with conceptual clarifications, code-related questions, debugging, and suggesting more efficient code. ChatGPT assisted with correctly identifying census or ACS tables and generating code for calculations using census data. 
+
+# References
+
+Bankrate. (2025, July 23). *What happens when you pay off your mortgage?* <https://www.bankrate.com/mortgages/what-happens-when-mortgage-is-paid-off/>
+
+Center for Community Progress. (2022, October). *Reimagine delinquent property tax enforcement: How to reduce vacancy, advance racial equity, and improve public services.* <https://communityprogress.org/publications/reimagine-delinquent-property-tax-enforcement/>
+
+City of Philadelphia. (n.d.). *Property taxes.* <https://www.phila.gov/services/payments-assistance-taxes/taxes/property-and-real-estate-taxes/>
+
+City of Philadelphia. (n.d.). *Set up an owner-occupied real estate tax payment agreement (OOPA).* <https://www.phila.gov/services/payments-assistance-taxes/payment-plans-and-assistance-programs/income-based-programs-for-residents/set-up-an-owner-occupied-real-estate-tax-payment-agreement-oopa/>
+
+City of Philadelphia Department of Revenue. (n.d.). *Real estate tax.* City of Philadelphia.
+
+City of Philadelphia Department of Revenue. (2025, April 10). *Real estate tax delinquency overview FY 2024.* City of Philadelphia. <https://www.phila.gov/media/20250410083015/Real-Estate-Tax-delinquency-overview-FY-2024.pdf>
+
+City of Philadelphia Department of Revenue. (2025, June 12). *Eight questions answered about Philly property taxes.* City of Philadelphia. <https://www.phila.gov/2025-06-12-eight-questions-answered-about-philly-property-taxes/>
+
+City of Philadelphia Department of Revenue. (2026, April 21). *Real estate tax delinquency overview FY 2025.* City of Philadelphia. <https://www.phila.gov/media/20260421113315/Real-Estate-Tax-delinquency-overview-FY-2025.pdf>
+
+City of Philadelphia Office of Property Assessment. (n.d.). *Actual Value Initiative (AVI).* City of Philadelphia. <https://www.phila.gov/departments/office-of-property-assessment/avi/>
+
+The Economy League of Greater Philadelphia. (2025). *The ebb and flow of realty transfer tax revenue in Philadelphia, 2010 to 2024.* <https://www.economyleague.org/resources/ebb-and-flow-realty-transfer-tax-revenue-philadelphia-2010-2024>
+
+Encord. (n.d.). *Balanced and imbalanced datasets in machine learning: Full introduction.* <https://encord.com/blog/an-introduction-to-balanced-and-imbalanced-datasets-in-machine-learning/>
+
+GeeksforGeeks. (2024, March 11). *Weighted logistic regression for imbalanced dataset.* <https://www.geeksforgeeks.org/machine-learning/weighted-logistic-regression-for-imbalanced-dataset/>
+
+Goliath Data. (n.d.). *Tax delinquency detection: Early warning signals.* <https://goliathdata.com/tax-delinquency-detection-early-warning-signals>
+
+Law for Seniors. (2024, August 20). *Past due income taxes and low income seniors.* <https://lawforseniors.org/topics/money-and-debt/taxes/past-due-income-taxes-and-low-income-seniors>
+
+Lincoln County. (n.d.). *Types of property ownership.* <https://cms5.revize.com/revize/lincolncounty/-Types%20of%20Property%20Ownership-.pdf>
+
+The Pew Charitable Trusts. (2021, August 4). *How tangled titles affect Philadelphia.* <https://www.pew.org/en/research-and-analysis/reports/2021/08/how-tangled-titles-affect-philadelphia>
+
+WHYY News. (2021, June 25). *Philadelphia faces \$450 million budget deficit due to coronavirus pandemic.* WHYY. <https://whyy.org/articles/philly-facing-450m-budget-shortfall-officials-eye-cuts-taxes-and-privatization/>
+
+Yadav, D. (2020, April 14). *Weighted logistic regression for imbalanced dataset.* Medium. <https://medium.com/data-science/weighted-logistic-regression-for-imbalanced-dataset-9a5cd88e68b>
+
+------------------------------------------------------------------------
+
+**Data Sources**
+
+City of Philadelphia Department of Planning and Development. (2025). *Datasets.* OpenDataPhilly. <https://opendataphilly.org/datasets>
+
+City of Philadelphia Department of Revenue. (n.d.). *Real estate tax delinquencies (visualization).* City of Philadelphia Open Data. <https://data.phila.gov/visualizations/real-estate-tax-delinquencies>
+
+U.S. Census Bureau. (2010). *American Community Survey 5-year estimates (2006–2010).* <https://data.census.gov>
+
+U.S. Census Bureau. (2011). *American Community Survey 5-year estimates (2007–2011).* <https://data.census.gov>
+
+U.S. Census Bureau. (2012). *American Community Survey 5-year estimates (2008–2012).* <https://data.census.gov>
+
+U.S. Census Bureau. (2013). *American Community Survey 5-year estimates (2009–2013).* <https://data.census.gov>
+
+U.S. Census Bureau. (2014). *American Community Survey 5-year estimates (2010–2014).* <https://data.census.gov>
+
+U.S. Census Bureau. (2015). *American Community Survey 5-year estimates (2011–2015).* <https://data.census.gov>
+
+U.S. Census Bureau. (2016). *American Community Survey 5-year estimates (2012–2016).* <https://data.census.gov>
+
+U.S. Census Bureau. (2017). *American Community Survey 5-year estimates (2013–2017).* <https://data.census.gov>
+
+U.S. Census Bureau. (2018). *American Community Survey 5-year estimates (2014–2018).* <https://data.census.gov>
+
+U.S. Census Bureau. (2019). *American Community Survey 5-year estimates (2015–2019).* <https://data.census.gov>
+
+U.S. Census Bureau. (2020). *American Community Survey 5-year estimates (2016–2020).* <https://data.census.gov>

@@ -24,7 +24,7 @@ website:
             text: "Lab 4: Spatial Predictive Analysis"
           - href: labs/lab5/lab5.qmd
             text: "Lab 5: Space-Time Prediction"
-          - href: labs/lab6/Model9_April_27_PPA.qmd
+          - href: labs/lab6/PPA_FinalAssigment.qmd
             text: "Lab 6: Final Challenge"
           - href: labs/finalpres/ppa final presentation.qmd
             text: "Final: Presentation"

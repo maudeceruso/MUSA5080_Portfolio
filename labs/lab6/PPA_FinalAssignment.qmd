@@ -1701,7 +1701,7 @@ cat("Years in data:", paste(sort(unique(final_model_df$year)), collapse = ", "),
 
 # Running Logistic Regression
 
-## Logistic model- Analysis Overview 
+## Logistic model- Analysis Overview
 
 Our initial model building process involved gradually adding variables to observe how model performance changed. Our initial model selection was based on lower AIC (Akaike Information Criterion), which evaluates model fit while penalizing unnecessary complexity. Among the initial Models 1 to 5, Model 5 produced the lowest AIC, so that was taken further to evaluate. However, its ROC AUC performance was very poor, when looking at the predicted probabilitygraph, sensitivity and specificity. ROC AUC (Receiver Operating Characteristic and the Area Under the Curve) measures how well a model distinguishes between delinquent and non-delinquent properties across different classification thresholds, with higher values indicating stronger predictive performance. This showed that although Model 5 fit the training data relatively well (maybe too well) it did not effectively identify delinquent properties.
 
@@ -2045,7 +2045,7 @@ cm_metrics_m6 %>%
 
 ```
 
-### Model 7: using class weights on Delinquent 
+### Model 7: using class weights on Delinquent
 
 ```{r}
 #| message: false
